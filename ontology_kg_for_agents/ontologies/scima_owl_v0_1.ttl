@@ -1,0 +1,142 @@
+# =====================================================================
+# SCIMA-OWL v0.1  (Article 1: What Is an Ontology?)
+# SmartCity Infrastructure Management Agent, core class hierarchy.
+#
+# Growth Tracker target for v0.1: 8 classes, 12 properties, 5 axioms,
+# 0 instance triples (schema only). This file is the canonical schema;
+# the article shows a curated excerpt of it.
+# =====================================================================
+
+@prefix scima: <http://scima.city/ontology#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+
+# --- Ontology header ---
+<http://scima.city/ontology> a owl:Ontology ;
+    owl:versionInfo "0.1" ;
+    rdfs:label "SCIMA-OWL" ;
+    rdfs:comment "Core class hierarchy for the SmartCity Infrastructure Management Agent." .
+
+# =====================================================================
+# CLASSES (8)
+# =====================================================================
+
+# (1) Top level concept
+scima:InfrastructureEntity a owl:Class ;
+    rdfs:label "Infrastructure Entity" ;
+    rdfs:comment "Any managed piece of physical city infrastructure." .
+
+# (2-5) Infrastructure subclasses
+scima:RoadSegment a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Road Segment" .
+
+scima:TrafficLight a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Traffic Light" .
+
+scima:PowerNode a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Power Node" .
+
+scima:WaterMain a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Water Main" .
+
+# (6) Sensing devices (separate hierarchy from infrastructure)
+scima:SensorDevice a owl:Class ;
+    rdfs:label "Sensor Device" ;
+    rdfs:comment "A device that observes the state of infrastructure." .
+
+# (7) Observations produced by sensors
+scima:SensorReading a owl:Class ;
+    rdfs:label "Sensor Reading" ;
+    rdfs:comment "A single timestamped observation from a sensor device." .
+
+# (8) Disruptive events
+scima:Incident a owl:Class ;
+    rdfs:label "Incident" ;
+    rdfs:comment "A disruptive event affecting one or more infrastructure entities." .
+
+# =====================================================================
+# PROPERTIES (12 = 6 object + 6 datatype)
+# =====================================================================
+
+# --- Object properties (6) ---
+scima:locatedOn a owl:ObjectProperty ;
+    rdfs:domain scima:TrafficLight ;
+    rdfs:range  scima:RoadSegment ;
+    rdfs:label "located on" .
+
+scima:monitors a owl:ObjectProperty ;
+    rdfs:domain scima:SensorDevice ;
+    rdfs:range  scima:InfrastructureEntity ;
+    rdfs:label "monitors" .
+
+scima:hasReading a owl:ObjectProperty ;
+    rdfs:domain scima:SensorDevice ;
+    rdfs:range  scima:SensorReading ;
+    rdfs:label "has reading" .
+
+scima:affects a owl:ObjectProperty ;
+    rdfs:domain scima:Incident ;
+    rdfs:range  scima:InfrastructureEntity ;
+    rdfs:label "affects" .
+
+scima:connectedTo a owl:ObjectProperty ;
+    rdfs:domain scima:RoadSegment ;
+    rdfs:range  scima:RoadSegment ;
+    rdfs:label "connected to" .
+
+scima:poweredBy a owl:ObjectProperty ;
+    rdfs:domain scima:InfrastructureEntity ;
+    rdfs:range  scima:PowerNode ;
+    rdfs:label "powered by" .
+
+# --- Datatype properties (6) ---
+scima:hasSpeedLimit a owl:DatatypeProperty ;
+    rdfs:domain scima:RoadSegment ;
+    rdfs:range  xsd:integer ;
+    rdfs:label "has speed limit" .
+
+scima:hasIdentifier a owl:DatatypeProperty ;
+    rdfs:domain scima:InfrastructureEntity ;
+    rdfs:range  xsd:string ;
+    rdfs:label "has identifier" .
+
+scima:timestamp a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ;
+    rdfs:range  xsd:dateTime ;
+    rdfs:label "timestamp" .
+
+scima:confidenceScore a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label "confidence score" .
+
+scima:hasStatus a owl:DatatypeProperty ;
+    rdfs:domain scima:Incident ;
+    rdfs:range  xsd:string ;
+    rdfs:label "has status" .
+
+scima:hasVoltage a owl:DatatypeProperty ;
+    rdfs:domain scima:PowerNode ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label "has voltage" .
+
+# =====================================================================
+# AXIOMS (5)  beyond the basic subclass / domain / range statements above
+# =====================================================================
+
+# (1-3) Disjointness: a node cannot be two of these kinds at once
+scima:RoadSegment owl:disjointWith scima:TrafficLight .
+scima:RoadSegment owl:disjointWith scima:PowerNode .
+scima:PowerNode   owl:disjointWith scima:WaterMain .
+
+# (4) Property characteristic: road connectivity is symmetric
+scima:connectedTo a owl:SymmetricProperty .
+
+# (5) Property characteristic: each entity has at most one identifier
+scima:hasIdentifier a owl:FunctionalProperty .

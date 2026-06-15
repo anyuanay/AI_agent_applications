@@ -1,0 +1,12 @@
+# Core: RDF / OWL handling for the SCIMA ontology and knowledge graph.
+rdflib>=7.0
+# rdflib's SPARQL engine (Article 2 onward) needs the modern pyparsing API.
+pyparsing>=3.1
+
+# Testing: keeps the article code snippets honest.
+pytest>=8.0
+
+# Added as the series needs them (kept here as a roadmap, commented until used):
+# owlrl>=6.0        # RDFS / OWL-RL reasoning (Articles 1, 8, 12)
+# numpy>=1.26       # particle filters, DBN inference (Article 14)
+# anthropic>=0.40   # LLM-assisted extraction, GraphRAG (Articles 10, 11, 16)
