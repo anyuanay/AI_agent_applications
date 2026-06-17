@@ -81,6 +81,15 @@ class PaperGraph:
         b = self.inc["ON_TOPIC"].get(f"Topic:{topic_b}", set())
         return [_paper_row(self.nodes[p]) for p in (a & b) if p in self.nodes]
 
+    def has_edge(self, from_id: str, rel: str, to_id: str, ntype: str = "Paper") -> bool:
+        """Does a typed edge exist between two nodes? The structural uncertainty
+        detector from Part 17: the most trustworthy signal because it checks the
+        claim against ground truth rather than the model's self-report. Used by
+        the `assert_citation` confidence gate to verify 'X cites Y' before the
+        agent states it as fact."""
+        src, dst = f"{ntype}:{from_id}", f"{ntype}:{to_id}"
+        return dst in self.out[rel].get(src, set())
+
     def shortest_path(self, from_id: str, to_id: str, rel: str = "CITES") -> list[str]:
         """Shortest path between two papers along `rel`, if one exists."""
         start, goal = f"Paper:{from_id}", f"Paper:{to_id}"

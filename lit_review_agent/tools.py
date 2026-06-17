@@ -9,6 +9,7 @@ provenance envelope the harness puts around tool output that came from the open
 web.
 """
 
+import datetime
 import json
 from pathlib import Path
 
@@ -19,6 +20,35 @@ from graph import GRAPH
 SEMANTIC_SCHOLAR_BASE = "https://api.semanticscholar.org/graph/v1"
 PAPER_FIELDS = "paperId,title,authors,year,citationCount,abstract,venue,fieldsOfStudy"
 OUTPUT_DIR = Path(__file__).parent / "output"
+CURRENT_YEAR = datetime.date.today().year
+MIN_YEAR = 1900
+
+
+# ---------------------------------------------------------------------------
+# Year-range parsing — the Part 15 holistic fix (the bug lived HERE, not in
+# the prompt). The original "since YYYY" path widened the window to (MIN_YEAR,
+# CURRENT_YEAR) and silently returned papers the user excluded. The fix routes
+# the repair to the layer that owns the bug — the parser — and a replayable
+# eval case (eval_suite.parser_regression) guards it forever.
+# ---------------------------------------------------------------------------
+def parse_year_range(spec: str | None) -> tuple[int, int] | None:
+    """Normalize a year spec to an inclusive (lo, hi) range, or None for no filter.
+
+    Handles '2024', '2023-2024', 'since 2024', and 'before 2020'.
+    """
+    if not spec:
+        return None
+    spec = spec.strip().lower()
+    if spec.startswith("since "):
+        lo = int(spec.removeprefix("since "))
+        return (lo, CURRENT_YEAR)            # was: return (MIN_YEAR, CURRENT_YEAR)  # the Part 15 bug
+    if spec.startswith("before "):
+        return (MIN_YEAR, int(spec.removeprefix("before ")))
+    if "-" in spec:
+        lo, hi = spec.split("-", 1)
+        return (int(lo), int(hi))
+    year = int(spec)
+    return (year, year)
 
 
 def _http_error(e: httpx.HTTPError) -> str:
@@ -38,9 +68,10 @@ def _http_error(e: httpx.HTTPError) -> str:
 
 def search_papers(query: str, year: str | None = None, sort_by: str = "relevance") -> str:
     """Search Semantic Scholar. Returns top 10 results as JSON."""
+    bounds = parse_year_range(year)  # Part 15: parse once, honor it below
     params = {"query": query, "limit": 25, "fields": PAPER_FIELDS}
-    if year:
-        params["year"] = year  # e.g. "2024" or "2023-2025"
+    if bounds:
+        params["year"] = f"{bounds[0]}-{bounds[1]}"
 
     try:
         resp = httpx.get(
@@ -50,6 +81,13 @@ def search_papers(query: str, year: str | None = None, sort_by: str = "relevance
         papers = resp.json().get("data", [])
     except httpx.HTTPError as e:
         return _http_error(e)
+
+    # Defense in the layer that owns the bug: never return a paper outside the
+    # requested range, whatever the API did. This is the holistic Part 15 fix,
+    # not a prompt rule asking the model to re-check the tool's output.
+    if bounds:
+        lo, hi = bounds
+        papers = [p for p in papers if p.get("year") and lo <= p["year"] <= hi]
 
     if sort_by == "citations":
         papers = sorted(papers, key=lambda p: p.get("citationCount") or 0, reverse=True)
@@ -109,6 +147,30 @@ def save_to_file(filename: str, content: str) -> str:
 def done(summary: str) -> str:
     """Signal that the task is complete."""
     return f"DONE: {summary}"
+
+
+# ---------------------------------------------------------------------------
+# ask_user (Part 17): the response to epistemic uncertainty only the user can
+# resolve. The series spent sixteen parts never giving the agent permission to
+# ask; this is it. A clarifying question is cheaper and safer than a confident
+# guess down the wrong path. The responder is injectable so the tool runs in an
+# interactive session, in a test, or unattended (where it abstains).
+# ---------------------------------------------------------------------------
+def _default_responder(question: str) -> str:
+    """Console responder for interactive runs; abstains when stdin is absent."""
+    import sys
+
+    if not sys.stdin or not sys.stdin.isatty():
+        return "(no user available; proceed only if safe, otherwise abstain)"
+    return input(f"\n[agent asks] {question}\n> ").strip()
+
+
+ASK_RESPONDER = _default_responder  # swap in tests / unattended runs
+
+
+def ask_user(question: str) -> str:
+    """Ask the user a clarifying question and return their answer (Part 17)."""
+    return json.dumps({"question": question, "answer": ASK_RESPONDER(question)})
 
 
 # ---------------------------------------------------------------------------

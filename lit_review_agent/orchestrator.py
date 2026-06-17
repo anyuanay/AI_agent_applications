@@ -1,5 +1,5 @@
 """
-Orchestrator — the four layers assembled (Parts 7 and 8).
+Orchestrator — the four layers assembled (Parts 7, 8, 13, 16).
 
     plan  ->  parallel sub-agent workers  ->  synthesize  ->  reflect  ->  save
 
@@ -11,6 +11,12 @@ guard_file_writes hook the harness installs.
 This is the hierarchy from Part 8, not a peer mesh — Part 9's verdict was that
 the lit-review job has one owner, one clock, and one window-able orchestrator,
 so peers would only add coordination tax.
+
+Production cut (Part 13): each stage is routed to the cheapest model that holds
+its quality bar (plan -> haiku, synthesize -> opus, reflect -> sonnet). The
+frontier model is reserved for the step the user sees. After the run, the result
+is shown via progressive disclosure (Part 16): one summary line by default, the
+plan and the full trace available on demand.
 
 Usage:
     python orchestrator.py "Survey graph neural networks across application areas."
@@ -29,18 +35,22 @@ load_dotenv(Path(__file__).parent / ".env")
 
 import anthropic
 
-from harness import MODEL, run_worker
+from disclosure import render
+from harness import run_worker
+from production import cost_rollup, route
 from skills import active_skill, skill
 from tools import save_to_file
-from tracing import Tracer, span
+from tracing import Run, Tracer, span
 
 _client = anthropic.Anthropic()
 
 
-def _ask(system: str, user: str, max_tokens: int = 2048) -> str:
-    """One-shot model call, no tools — used for plan/synthesize/reflect."""
+def _ask(system: str, user: str, stage: str = "worker", max_tokens: int = 2048) -> str:
+    """One-shot model call, no tools — used for plan/synthesize/reflect. The model
+    is routed by stage (Part 13): the cheap model plans, the frontier model
+    synthesizes the step the user sees."""
     resp = _client.messages.create(
-        model=MODEL, max_tokens=max_tokens, system=system,
+        model=route(stage), max_tokens=max_tokens, system=system,
         messages=[{"role": "user", "content": user}],
     )
     return "".join(b.text for b in resp.content if hasattr(b, "text")).strip()
@@ -53,6 +63,7 @@ def make_plan(goal: str) -> list[dict]:
         "subfields, then a final synthesis step. Return ONLY JSON of the form "
         '[{"subgoal": "...", "kind": "subfield"}, {"subgoal": "synthesize", "kind": "synthesis"}].',
         goal,
+        stage="plan",
     )
     try:
         plan = json.loads(raw[raw.index("[") : raw.rindex("]") + 1])
@@ -75,7 +86,8 @@ def synthesize(summaries: list[str]) -> str:
     if procedure:  # the loaded skill's procedure, only present inside the with-block
         system += "\n\nFollow this procedure:\n" + procedure
     body = "\n\n".join(f"## Subtopic summary {i+1}\n{s}" for i, s in enumerate(summaries))
-    return _ask(system, "Synthesize these into one review, preserving every [S2:id] tag:\n\n" + body)
+    return _ask(system, "Synthesize these into one review, preserving every [S2:id] tag:\n\n" + body,
+                stage="synthesize")
 
 
 def reflect_and_revise(draft: str, summaries: list[str], max_passes: int = 2) -> str:
@@ -89,6 +101,7 @@ def reflect_and_revise(draft: str, summaries: list[str], max_passes: int = 2) ->
             "draft, grounded ONLY in the provided sources: unsupported claims, missing "
             "[S2:id] tags, citations not present in the sources. If none, reply 'OK'.",
             f"SOURCES:\n{sources}\n\nDRAFT:\n{review}",
+            stage="reflect",
         )
         if critique.strip().upper().startswith("OK"):
             break
@@ -96,6 +109,7 @@ def reflect_and_revise(draft: str, summaries: list[str], max_passes: int = 2) ->
             "Revise the draft to fix exactly the listed problems. Do not add new "
             "citations that are not in the sources. Return the full revised review.",
             f"CRITIQUE:\n{critique}\n\nDRAFT:\n{review}",
+            stage="reflect",
         )
     return review
 
@@ -135,7 +149,15 @@ def run_survey(goal: str, filename: str = "survey.md") -> str:
               input={"filename": filename}) as fs:
         fs.output = save_to_file(filename, review)
     tracer.save()
+
+    # Progressive disclosure (Part 16): the summary line by default, with the
+    # plan and full trace a drill-down away. Plus the cost rollup (Part 13).
+    run: Run = tracer.to_run()
     print(f"\nSaved survey to output/{filename}")
+    print("\n" + render(run, "summary"))
+    print("\nplan:\n" + "\n".join(render(run, "plan").splitlines()[1:]))
+    roll = cost_rollup(run)
+    print(f"\ncost (Part 13): ~${roll['est_cost_usd']} over {roll['total_tokens']} tokens")
     return review
 
 

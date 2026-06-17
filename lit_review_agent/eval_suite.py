@@ -253,6 +253,40 @@ WORKER_B_CASE = EvalCase(
 
 
 # ---------------------------------------------------------------------------
+# Part 15 — failure-driven eval, the wrong-year retrieval bug frozen as a case.
+# The fix was holistic (the parser in tools.py, NOT a prompt rule). This case is
+# the replayable guard that stays red until the parser is correct, forever.
+# ---------------------------------------------------------------------------
+def parser_regression() -> list[tuple[str, bool]]:
+    from tools import CURRENT_YEAR, parse_year_range
+
+    cases = [
+        ("since_year_lower_bound", parse_year_range("since 2024") == (2024, CURRENT_YEAR)),
+        ("single_year",            parse_year_range("2024") == (2024, 2024)),
+        ("explicit_range",         parse_year_range("2019-2023") == (2019, 2023)),
+        ("no_filter",              parse_year_range(None) is None),
+    ]
+    return cases
+
+
+# ---------------------------------------------------------------------------
+# Part 17 — the confidence gate must never assert an unverified citation.
+# ---------------------------------------------------------------------------
+def confidence_gate_cases() -> list[tuple[str, bool]]:
+    from graph import GRAPH
+    from uncertainty import ABSTAIN, STATE, assert_citation
+
+    GRAPH.add_paper({"id": "P1", "title": "Seed", "references": ["P2"]})  # P1 -CITES-> P2
+    GRAPH.add_paper({"id": "P3", "title": "Unrelated"})
+    verified = assert_citation("P1", "P2")
+    unverified = assert_citation("P1", "P3")
+    return [
+        ("real_edge_is_stated", verified["action"] == STATE and verified["claim"].verified),
+        ("missing_edge_flagged", unverified["action"] == ABSTAIN and not unverified["claim"].verified),
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Offline demonstration: the same case red on the failing trace, green on the fix.
 # ---------------------------------------------------------------------------
 def _demo() -> None:
@@ -265,7 +299,15 @@ def _demo() -> None:
         verdict = "PASS" if ok else "FAIL"
         full_v = "Pass" if isinstance(full, Pass) else f"Fail({full.reason})"
         print(f"  [{label:<15}] worker-B grade: {verdict:<4}   grade_run: {full_v}")
-    print("\nThe case is red until the two Part 11 fixes land, then a permanent guard.")
+    print("The case is red until the two Part 11 fixes land, then a permanent guard.")
+
+    print("\nWrong-year parser regression (Part 15)\n" + "─" * 60)
+    for name, ok in parser_regression():
+        print(f"  [{'PASS' if ok else 'FAIL'}] {name}")
+
+    print("\nConfidence gate (Part 17)\n" + "─" * 60)
+    for name, ok in confidence_gate_cases():
+        print(f"  [{'PASS' if ok else 'FAIL'}] {name}")
 
 
 if __name__ == "__main__":
