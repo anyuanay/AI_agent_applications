@@ -29,6 +29,7 @@ _ONTOLOGY_DIR = _ROOT / "ontologies"
 _VERSION_FILES = {
     "v0.1": "scima_owl_v0_1.ttl",
     "v0.2": "scima_owl_v0_2.ttl",
+    "v0.5": "scima_owl_v0_5.ttl",
 }
 
 

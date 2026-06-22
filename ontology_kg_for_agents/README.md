@@ -19,13 +19,16 @@ ontology_kg_for_agents/
 │   ├── __init__.py
 │   ├── ontology.py            # load + inspect versioned SCIMA-OWL files
 │   ├── building_blocks.py     # Article 1: classes, individuals, properties, axioms
-│   └── knowledge_graph.py     # Article 2: populate triples, named graphs, SPARQL, geo query
+│   ├── knowledge_graph.py     # Article 2: populate triples, named graphs, SPARQL, geo query
+│   └── context_graph.py       # Article 3: k-hop projection, relevance scoring, turns, eviction
 ├── ontologies/                # canonical SCIMA-OWL, one file per version
 │   ├── scima_owl_v0_1.ttl     # Article 1 (8 classes, 12 properties, 5 axioms)
-│   └── scima_owl_v0_2.ttl     # Article 2 (12 classes, 20 properties, 8 axioms)
+│   ├── scima_owl_v0_2.ttl     # Article 2 (12 classes, 20 properties, 8 axioms)
+│   └── scima_owl_v0_5.ttl     # Article 3 (18 classes, 30 properties, 12 axioms)
 └── tests/
     ├── test_article_01.py     # asserts v0.1 matches the Growth Tracker
-    └── test_article_02.py     # asserts v0.2 + SCIMA-KG population and queries
+    ├── test_article_02.py     # asserts v0.2 + SCIMA-KG population and queries
+    └── test_article_03.py     # asserts v0.5 + context-graph projection and turns
 ```
 
 As the series proceeds, new modules join `scima/` (context graphs, belief
@@ -38,7 +41,7 @@ files join `ontologies/`, each with a matching test file.
 |---------|---------|------|
 | 1 | What is an ontology? | `scima/building_blocks.py`, `ontologies/scima_owl_v0_1.ttl` |
 | 2 | Knowledge graphs, triples, SPARQL | `scima/knowledge_graph.py`, `ontologies/scima_owl_v0_2.ttl` |
-| 3 | Context graphs | _(planned)_ `scima/context_graph.py` |
+| 3 | Context graphs, dynamic working memory | `scima/context_graph.py`, `ontologies/scima_owl_v0_5.ttl` |
 | ... | ... | ... |
 
 ## Setup
@@ -68,6 +71,20 @@ python -m scima.knowledge_graph --populate sample --query lights-near I-204
 #   scima:TL_90  on scima:RoadSegment_Main_St_NB   60 m
 #   scima:TL_88  on scima:RoadSegment_Main_St_NB  210 m
 #   scima:TL_91  on scima:RoadSegment_Main_St_NB  430 m
+```
+
+Build a context graph and trace its evolution across agent turns (Article 3):
+
+```bash
+python -m scima.context_graph --build --focal Incident_I204 --goal resolve
+# Loaded SCIMA-OWL v0.5: 18 classes, 30 properties, 12 axioms
+# Built context graph: focal Incident_I204, 3-hop, 142 nodes (budget 150)
+
+python -m scima.context_graph --trace I-204
+# Turn 0 (report): 2 nodes   +Incident_I204, WaterMain_7B
+# Turn 1 (expand): 140 nodes  +<infrastructure within 3 hops>
+# Turn 2 (refresh): 140 nodes +Vehicle_Ambulance_3  -FlowSensor_A42 (stale)
+# Turn 3 (act): 140 nodes     dispatch grounded, assignedTo written back
 ```
 
 Run the tests:
