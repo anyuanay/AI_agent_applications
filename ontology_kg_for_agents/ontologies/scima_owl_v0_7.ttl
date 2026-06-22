@@ -1,0 +1,355 @@
+# =====================================================================
+# SCIMA-OWL v0.7  (Article 4: Extracting Ontologies from Sources)
+# SmartCity Infrastructure Management Agent.
+#
+# v0.7 is the first version whose new vocabulary is *learned*, not hand
+# authored. An ontology-learning pipeline (NER -> LLM schema induction ->
+# clustering -> RITE expert review) reads 500 city maintenance and
+# emergency procedure documents and proposes a 23-class EmergencyProtocol
+# sub-hierarchy. The classes below are the result *after* expert review.
+#
+# Growth Tracker target (cumulative):
+#   41 classes, 48 properties (25 object + 23 datatype), 23 axioms.
+# Delta over v0.5: 23 new classes, 18 new properties, 11 new axioms.
+#
+# Provenance matters here: because these classes came from a noisy
+# pipeline, each carries an extractionConfidence and a sourceDocument so a
+# reader can trace a learned class back to the text that justified it.
+# =====================================================================
+
+@prefix scima: <http://scima.city/ontology#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+
+# --- Ontology header ---
+<http://scima.city/ontology> a owl:Ontology ;
+    owl:versionInfo "0.7" ;
+    owl:priorVersion <http://scima.city/ontology/v0.5> ;
+    rdfs:label "SCIMA-OWL" ;
+    rdfs:comment "Adds a learned EmergencyProtocol hierarchy extracted from procedure documents." .
+
+# =====================================================================
+# CLASSES (41 = 18 from v0.5 + 23 new)
+# =====================================================================
+
+# --- Top level concept (v0.1) ---
+scima:InfrastructureEntity a owl:Class ;
+    rdfs:label "Infrastructure Entity" ;
+    rdfs:comment "Any managed piece of physical city infrastructure." .
+
+# --- Infrastructure subclasses (v0.1) ---
+scima:RoadSegment a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ; rdfs:label "Road Segment" .
+scima:TrafficLight a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ; rdfs:label "Traffic Light" .
+scima:PowerNode a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ; rdfs:label "Power Node" .
+scima:WaterMain a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ; rdfs:label "Water Main" .
+
+# --- Sensing (v0.1) ---
+scima:SensorDevice a owl:Class ;
+    rdfs:label "Sensor Device" ;
+    rdfs:comment "A device that observes the state of infrastructure." .
+scima:SensorReading a owl:Class ;
+    rdfs:label "Sensor Reading" ;
+    rdfs:comment "A single timestamped observation from a sensor device." .
+
+# --- Disruptive events (v0.1) ---
+scima:Incident a owl:Class ;
+    rdfs:label "Incident" ;
+    rdfs:comment "A disruptive event affecting one or more infrastructure entities." .
+
+# --- Concrete sensor kinds + transit (v0.2) ---
+scima:TrafficCamera a owl:Class ;
+    rdfs:subClassOf scima:SensorDevice ; rdfs:label "Traffic Camera" .
+scima:FlowSensor a owl:Class ;
+    rdfs:subClassOf scima:SensorDevice ; rdfs:label "Flow Sensor" .
+scima:PowerMeter a owl:Class ;
+    rdfs:subClassOf scima:SensorDevice ; rdfs:label "Power Meter" .
+scima:TransitStop a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ; rdfs:label "Transit Stop" .
+
+# --- Agents, goals, working memory, vehicles (v0.5) ---
+scima:Agent a owl:Class ;
+    rdfs:label "Agent" ;
+    rdfs:comment "An autonomous decision maker that perceives, plans, and acts." .
+scima:ZoneAgent a owl:Class ;
+    rdfs:subClassOf scima:Agent ; rdfs:label "Zone Agent" .
+scima:DispatchAgent a owl:Class ;
+    rdfs:subClassOf scima:Agent ; rdfs:label "Dispatch Agent" .
+scima:GoalState a owl:Class ;
+    rdfs:label "Goal State" ;
+    rdfs:comment "A target world state an agent is committed to bringing about." .
+scima:ContextGraph a owl:Class ;
+    rdfs:label "Context Graph" ;
+    rdfs:comment "A task-scoped projection of the KG that an agent reasons over." .
+scima:Vehicle a owl:Class ;
+    rdfs:label "Vehicle" ;
+    rdfs:comment "A mobile resource such as an ambulance, crew truck, or bus." .
+
+# =====================================================================
+# NEW in v0.7: the learned EmergencyProtocol hierarchy (23 classes)
+# Each class is annotated with the confidence the pipeline assigned it and
+# the source document that justified it, so a learned class is traceable.
+# =====================================================================
+
+# --- (19) Root of the learned hierarchy ---
+scima:EmergencyProtocol a owl:Class ;
+    rdfs:label "Emergency Protocol" ;
+    rdfs:comment "A documented procedure the city follows in response to an incident." ;
+    scima:extractionConfidence 0.98 ;
+    scima:sourceDocument "ops/emergency_manual_master.pdf" .
+
+# --- (20-24) Category level: the five protocol families the cluster step found ---
+scima:HazardProtocol a owl:Class ;
+    rdfs:subClassOf scima:EmergencyProtocol ; rdfs:label "Hazard Protocol" ;
+    scima:extractionConfidence 0.93 ; scima:sourceDocument "ops/hazard_response_guide.pdf" .
+scima:UtilityProtocol a owl:Class ;
+    rdfs:subClassOf scima:EmergencyProtocol ; rdfs:label "Utility Protocol" ;
+    scima:extractionConfidence 0.95 ; scima:sourceDocument "ops/utility_outage_sop.pdf" .
+scima:TrafficProtocol a owl:Class ;
+    rdfs:subClassOf scima:EmergencyProtocol ; rdfs:label "Traffic Protocol" ;
+    scima:extractionConfidence 0.94 ; scima:sourceDocument "ops/traffic_incident_sop.pdf" .
+scima:PublicSafetyProtocol a owl:Class ;
+    rdfs:subClassOf scima:EmergencyProtocol ; rdfs:label "Public Safety Protocol" ;
+    scima:extractionConfidence 0.91 ; scima:sourceDocument "ops/public_safety_plan.pdf" .
+scima:EscalationProtocol a owl:Class ;
+    rdfs:subClassOf scima:EmergencyProtocol ; rdfs:label "Escalation Protocol" ;
+    scima:extractionConfidence 0.88 ; scima:sourceDocument "ops/interagency_escalation.pdf" .
+
+# --- (25-28) Hazard leaves ---
+scima:FloodProtocol a owl:Class ;
+    rdfs:subClassOf scima:HazardProtocol ; rdfs:label "Flood Protocol" ;
+    scima:extractionConfidence 0.90 ; scima:sourceDocument "ops/hazard_response_guide.pdf" .
+scima:FireProtocol a owl:Class ;
+    rdfs:subClassOf scima:HazardProtocol ; rdfs:label "Fire Protocol" ;
+    scima:extractionConfidence 0.92 ; scima:sourceDocument "ops/hazard_response_guide.pdf" .
+scima:GasLeakProtocol a owl:Class ;
+    rdfs:subClassOf scima:HazardProtocol ; rdfs:label "Gas Leak Protocol" ;
+    scima:extractionConfidence 0.86 ; scima:sourceDocument "ops/hazard_response_guide.pdf" .
+scima:StructuralCollapseProtocol a owl:Class ;
+    rdfs:subClassOf scima:HazardProtocol ; rdfs:label "Structural Collapse Protocol" ;
+    scima:extractionConfidence 0.84 ; scima:sourceDocument "ops/building_safety_addendum.pdf" .
+
+# --- (29-31) Utility leaves ---
+scima:WaterMainBreakProtocol a owl:Class ;
+    rdfs:subClassOf scima:UtilityProtocol ; rdfs:label "Water Main Break Protocol" ;
+    scima:extractionConfidence 0.96 ; scima:sourceDocument "ops/utility_outage_sop.pdf" .
+scima:PowerOutageProtocol a owl:Class ;
+    rdfs:subClassOf scima:UtilityProtocol ; rdfs:label "Power Outage Protocol" ;
+    scima:extractionConfidence 0.95 ; scima:sourceDocument "ops/utility_outage_sop.pdf" .
+scima:WaterContaminationProtocol a owl:Class ;
+    rdfs:subClassOf scima:UtilityProtocol ; rdfs:label "Water Contamination Protocol" ;
+    scima:extractionConfidence 0.83 ; scima:sourceDocument "ops/water_quality_annex.pdf" .
+
+# --- (32-34) Traffic leaves ---
+scima:RoadClosureProtocol a owl:Class ;
+    rdfs:subClassOf scima:TrafficProtocol ; rdfs:label "Road Closure Protocol" ;
+    scima:extractionConfidence 0.94 ; scima:sourceDocument "ops/traffic_incident_sop.pdf" .
+scima:TrafficDiversionProtocol a owl:Class ;
+    rdfs:subClassOf scima:TrafficProtocol ; rdfs:label "Traffic Diversion Protocol" ;
+    scima:extractionConfidence 0.91 ; scima:sourceDocument "ops/traffic_incident_sop.pdf" .
+scima:SignalFailureProtocol a owl:Class ;
+    rdfs:subClassOf scima:TrafficProtocol ; rdfs:label "Signal Failure Protocol" ;
+    scima:extractionConfidence 0.87 ; scima:sourceDocument "ops/traffic_incident_sop.pdf" .
+
+# --- (35-37) Public-safety leaves ---
+scima:EvacuationProtocol a owl:Class ;
+    rdfs:subClassOf scima:PublicSafetyProtocol ; rdfs:label "Evacuation Protocol" ;
+    scima:extractionConfidence 0.92 ; scima:sourceDocument "ops/public_safety_plan.pdf" .
+scima:ShelterInPlaceProtocol a owl:Class ;
+    rdfs:subClassOf scima:PublicSafetyProtocol ; rdfs:label "Shelter In Place Protocol" ;
+    scima:extractionConfidence 0.85 ; scima:sourceDocument "ops/public_safety_plan.pdf" .
+scima:CrowdControlProtocol a owl:Class ;
+    rdfs:subClassOf scima:PublicSafetyProtocol ; rdfs:label "Crowd Control Protocol" ;
+    scima:extractionConfidence 0.82 ; scima:sourceDocument "ops/public_safety_plan.pdf" .
+
+# --- (38-39) Escalation leaves ---
+scima:InterAgencyProtocol a owl:Class ;
+    rdfs:subClassOf scima:EscalationProtocol ; rdfs:label "Inter Agency Protocol" ;
+    scima:extractionConfidence 0.86 ; scima:sourceDocument "ops/interagency_escalation.pdf" .
+scima:StateEmergencyProtocol a owl:Class ;
+    rdfs:subClassOf scima:EscalationProtocol ; rdfs:label "State Emergency Protocol" ;
+    scima:extractionConfidence 0.80 ; scima:sourceDocument "ops/interagency_escalation.pdf" .
+
+# --- (40-41) Supporting classes the pipeline lifted out of step-by-step text ---
+scima:ProtocolStep a owl:Class ;
+    rdfs:label "Protocol Step" ;
+    rdfs:comment "One ordered action within an emergency protocol." ;
+    scima:extractionConfidence 0.89 ; scima:sourceDocument "ops/emergency_manual_master.pdf" .
+scima:ResponderRole a owl:Class ;
+    rdfs:label "Responder Role" ;
+    rdfs:comment "A role a protocol step requires, e.g. incident commander or crew lead." ;
+    scima:extractionConfidence 0.87 ; scima:sourceDocument "ops/emergency_manual_master.pdf" .
+
+# =====================================================================
+# PROPERTIES (48 = 30 from v0.5 + 18 new)
+# =====================================================================
+
+# --- Object properties from v0.5 (15) ---
+scima:locatedOn a owl:ObjectProperty ;
+    rdfs:domain scima:TrafficLight ; rdfs:range scima:RoadSegment ; rdfs:label "located on" .
+scima:monitors a owl:ObjectProperty ;
+    rdfs:domain scima:SensorDevice ; rdfs:range scima:InfrastructureEntity ; rdfs:label "monitors" .
+scima:hasReading a owl:ObjectProperty ;
+    rdfs:domain scima:SensorDevice ; rdfs:range scima:SensorReading ; rdfs:label "has reading" .
+scima:affects a owl:ObjectProperty ;
+    rdfs:domain scima:Incident ; rdfs:range scima:InfrastructureEntity ; rdfs:label "affects" .
+scima:connectedTo a owl:ObjectProperty ;
+    rdfs:domain scima:RoadSegment ; rdfs:range scima:RoadSegment ; rdfs:label "connected to" .
+scima:poweredBy a owl:ObjectProperty ;
+    rdfs:domain scima:InfrastructureEntity ; rdfs:range scima:PowerNode ; rdfs:label "powered by" .
+scima:recordedBy a owl:ObjectProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range scima:SensorDevice ; rdfs:label "recorded by" .
+scima:servesStop a owl:ObjectProperty ;
+    rdfs:domain scima:RoadSegment ; rdfs:range scima:TransitStop ; rdfs:label "serves stop" .
+scima:pursuesGoal a owl:ObjectProperty ;
+    rdfs:domain scima:Agent ; rdfs:range scima:GoalState ; rdfs:label "pursues goal" .
+scima:targets a owl:ObjectProperty ;
+    rdfs:domain scima:GoalState ; rdfs:range scima:InfrastructureEntity ; rdfs:label "targets" .
+scima:respondsTo a owl:ObjectProperty ;
+    rdfs:domain scima:Agent ; rdfs:range scima:Incident ; rdfs:label "responds to" .
+scima:managedBy a owl:ObjectProperty ;
+    rdfs:domain scima:InfrastructureEntity ; rdfs:range scima:ZoneAgent ; rdfs:label "managed by" .
+scima:hasFocalEntity a owl:ObjectProperty ;
+    rdfs:domain scima:ContextGraph ; rdfs:label "has focal entity" .
+scima:includesEntity a owl:ObjectProperty ;
+    rdfs:domain scima:ContextGraph ; rdfs:label "includes entity" .
+scima:assignedTo a owl:ObjectProperty ;
+    rdfs:domain scima:Vehicle ; rdfs:range scima:Incident ; rdfs:label "assigned to" .
+
+# --- NEW object properties in v0.7 (10): how protocols connect to the world ---
+scima:appliesToIncident a owl:ObjectProperty ;
+    rdfs:domain scima:EmergencyProtocol ; rdfs:range scima:Incident ;
+    rdfs:label "applies to incident" ;
+    rdfs:comment "The kind of incident a protocol is written for." .
+scima:triggeredBy a owl:ObjectProperty ;
+    rdfs:domain scima:EmergencyProtocol ; rdfs:range scima:Incident ;
+    rdfs:label "triggered by" ;
+    rdfs:comment "The incident occurrence that activates a protocol instance." .
+scima:hasStep a owl:ObjectProperty ;
+    rdfs:domain scima:EmergencyProtocol ; rdfs:range scima:ProtocolStep ;
+    rdfs:label "has step" .
+scima:nextStep a owl:ObjectProperty ;
+    rdfs:domain scima:ProtocolStep ; rdfs:range scima:ProtocolStep ;
+    rdfs:label "next step" ;
+    rdfs:comment "Orders the steps of a protocol into a sequence." .
+scima:requiresRole a owl:ObjectProperty ;
+    rdfs:domain scima:ProtocolStep ; rdfs:range scima:ResponderRole ;
+    rdfs:label "requires role" .
+scima:assignedResponder a owl:ObjectProperty ;
+    rdfs:domain scima:ProtocolStep ; rdfs:range scima:Agent ;
+    rdfs:label "assigned responder" .
+scima:fulfilledByVehicle a owl:ObjectProperty ;
+    rdfs:domain scima:ResponderRole ; rdfs:range scima:Vehicle ;
+    rdfs:label "fulfilled by vehicle" .
+scima:escalatesTo a owl:ObjectProperty ;
+    rdfs:domain scima:EmergencyProtocol ; rdfs:range scima:EscalationProtocol ;
+    rdfs:label "escalates to" .
+scima:supersedes a owl:ObjectProperty ;
+    rdfs:domain scima:EmergencyProtocol ; rdfs:range scima:EmergencyProtocol ;
+    rdfs:label "supersedes" ;
+    rdfs:comment "A revised protocol that replaces an older one." .
+scima:coordinatesWith a owl:ObjectProperty ;
+    rdfs:domain scima:EmergencyProtocol ; rdfs:range scima:Agent ;
+    rdfs:label "coordinates with" .
+
+# --- Datatype properties from v0.5 (15) ---
+scima:hasSpeedLimit a owl:DatatypeProperty ;
+    rdfs:domain scima:RoadSegment ; rdfs:range xsd:integer ; rdfs:label "has speed limit" .
+scima:hasIdentifier a owl:DatatypeProperty ;
+    rdfs:domain scima:InfrastructureEntity ; rdfs:range xsd:string ; rdfs:label "has identifier" .
+scima:timestamp a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:dateTime ; rdfs:label "timestamp" .
+scima:confidenceScore a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:decimal ; rdfs:label "confidence score" .
+scima:hasStatus a owl:DatatypeProperty ;
+    rdfs:domain scima:Incident ; rdfs:range xsd:string ; rdfs:label "has status" .
+scima:hasVoltage a owl:DatatypeProperty ;
+    rdfs:domain scima:PowerNode ; rdfs:range xsd:decimal ; rdfs:label "has voltage" .
+scima:observedValue a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:integer ; rdfs:label "observed value" .
+scima:hasTimestamp a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:dateTime ; rdfs:label "has timestamp" .
+scima:hasConfidenceScore a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:decimal ; rdfs:label "has confidence score" .
+scima:hasFlowRate a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:decimal ; rdfs:label "has flow rate" .
+scima:hasLatitude a owl:DatatypeProperty ;
+    rdfs:range xsd:decimal ; rdfs:label "has latitude" .
+scima:hasLongitude a owl:DatatypeProperty ;
+    rdfs:range xsd:decimal ; rdfs:label "has longitude" .
+scima:relevanceScore a owl:DatatypeProperty ;
+    rdfs:range xsd:decimal ; rdfs:label "relevance score" .
+scima:hopDistance a owl:DatatypeProperty ;
+    rdfs:range xsd:integer ; rdfs:label "hop distance" .
+scima:hasAvailability a owl:DatatypeProperty ;
+    rdfs:domain scima:Vehicle ; rdfs:range xsd:string ; rdfs:label "has availability" .
+
+# --- NEW datatype properties in v0.7 (8): protocol payload + extraction provenance ---
+scima:hasProtocolCode a owl:DatatypeProperty ;
+    rdfs:domain scima:EmergencyProtocol ; rdfs:range xsd:string ;
+    rdfs:label "has protocol code" ;
+    rdfs:comment "The city's canonical code for a protocol, e.g. UTIL-WB-02." .
+scima:hasProtocolName a owl:DatatypeProperty ;
+    rdfs:domain scima:EmergencyProtocol ; rdfs:range xsd:string ; rdfs:label "has protocol name" .
+scima:hasPriority a owl:DatatypeProperty ;
+    rdfs:domain scima:EmergencyProtocol ; rdfs:range xsd:integer ;
+    rdfs:label "has priority" ;
+    rdfs:comment "Dispatch priority, 1 highest." .
+scima:hasResponseWindow a owl:DatatypeProperty ;
+    rdfs:domain scima:EmergencyProtocol ; rdfs:range xsd:integer ;
+    rdfs:label "has response window" ;
+    rdfs:comment "Required response time in minutes." .
+scima:hasStepOrder a owl:DatatypeProperty ;
+    rdfs:domain scima:ProtocolStep ; rdfs:range xsd:integer ; rdfs:label "has step order" .
+scima:requiresSignoff a owl:DatatypeProperty ;
+    rdfs:domain scima:ProtocolStep ; rdfs:range xsd:boolean ; rdfs:label "requires signoff" .
+scima:extractionConfidence a owl:DatatypeProperty ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "extraction confidence" ;
+    rdfs:comment "How confident the learning pipeline was in a proposed class, in [0,1]." .
+scima:sourceDocument a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "source document" ;
+    rdfs:comment "The procedure document that justified a learned class (provenance)." .
+
+# =====================================================================
+# AXIOMS (23 = 12 from v0.5 + 11 new)  beyond basic subclass/domain/range
+# Counted by scima/ontology.py: owl:disjointWith + property characteristics.
+# =====================================================================
+
+# --- Disjointness from v0.1/v0.2 (5) ---
+scima:RoadSegment owl:disjointWith scima:TrafficLight .
+scima:RoadSegment owl:disjointWith scima:PowerNode .
+scima:PowerNode   owl:disjointWith scima:WaterMain .
+scima:SensorDevice  owl:disjointWith scima:InfrastructureEntity .
+scima:SensorReading owl:disjointWith scima:SensorDevice .
+
+# --- Property characteristics from v0.1/v0.2 (3) ---
+scima:connectedTo a owl:SymmetricProperty .
+scima:hasIdentifier a owl:FunctionalProperty .
+scima:recordedBy a owl:FunctionalProperty .
+
+# --- Disjointness + characteristics from v0.5 (4) ---
+scima:Agent owl:disjointWith scima:InfrastructureEntity .
+scima:Agent owl:disjointWith scima:SensorDevice .
+scima:ZoneAgent owl:disjointWith scima:DispatchAgent .
+scima:hasFocalEntity a owl:FunctionalProperty .
+
+# --- NEW in v0.7 (11): the learned hierarchy is a distinct kind, its
+#     families are mutually exclusive, and protocol structure is constrained ---
+scima:EmergencyProtocol owl:disjointWith scima:InfrastructureEntity .
+scima:EmergencyProtocol owl:disjointWith scima:Agent .
+scima:HazardProtocol owl:disjointWith scima:UtilityProtocol .
+scima:HazardProtocol owl:disjointWith scima:TrafficProtocol .
+scima:UtilityProtocol owl:disjointWith scima:PublicSafetyProtocol .
+scima:TrafficProtocol owl:disjointWith scima:PublicSafetyProtocol .
+scima:ProtocolStep owl:disjointWith scima:EmergencyProtocol .
+scima:ResponderRole owl:disjointWith scima:Agent .
+scima:supersedes a owl:TransitiveProperty .
+scima:nextStep a owl:IrreflexiveProperty .
+scima:hasProtocolCode a owl:FunctionalProperty .

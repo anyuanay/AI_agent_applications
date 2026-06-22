@@ -20,15 +20,18 @@ ontology_kg_for_agents/
 │   ├── ontology.py            # load + inspect versioned SCIMA-OWL files
 │   ├── building_blocks.py     # Article 1: classes, individuals, properties, axioms
 │   ├── knowledge_graph.py     # Article 2: populate triples, named graphs, SPARQL, geo query
-│   └── context_graph.py       # Article 3: k-hop projection, relevance scoring, turns, eviction
+│   ├── context_graph.py       # Article 3: k-hop projection, relevance scoring, turns, eviction
+│   └── ontology_learning.py   # Article 4: Hearst extraction, LLM induction, clustering, RITE
 ├── ontologies/                # canonical SCIMA-OWL, one file per version
 │   ├── scima_owl_v0_1.ttl     # Article 1 (8 classes, 12 properties, 5 axioms)
 │   ├── scima_owl_v0_2.ttl     # Article 2 (12 classes, 20 properties, 8 axioms)
-│   └── scima_owl_v0_5.ttl     # Article 3 (18 classes, 30 properties, 12 axioms)
+│   ├── scima_owl_v0_5.ttl     # Article 3 (18 classes, 30 properties, 12 axioms)
+│   └── scima_owl_v0_7.ttl     # Article 4 (41 classes, 48 properties, 23 axioms)
 └── tests/
     ├── test_article_01.py     # asserts v0.1 matches the Growth Tracker
     ├── test_article_02.py     # asserts v0.2 + SCIMA-KG population and queries
-    └── test_article_03.py     # asserts v0.5 + context-graph projection and turns
+    ├── test_article_03.py     # asserts v0.5 + context-graph projection and turns
+    └── test_article_04.py     # asserts v0.7 + the learned EmergencyProtocol delta
 ```
 
 As the series proceeds, new modules join `scima/` (context graphs, belief
@@ -42,6 +45,7 @@ files join `ontologies/`, each with a matching test file.
 | 1 | What is an ontology? | `scima/building_blocks.py`, `ontologies/scima_owl_v0_1.ttl` |
 | 2 | Knowledge graphs, triples, SPARQL | `scima/knowledge_graph.py`, `ontologies/scima_owl_v0_2.ttl` |
 | 3 | Context graphs, dynamic working memory | `scima/context_graph.py`, `ontologies/scima_owl_v0_5.ttl` |
+| 4 | Extracting ontologies from sources | `scima/ontology_learning.py`, `ontologies/scima_owl_v0_7.ttl` |
 | ... | ... | ... |
 
 ## Setup
@@ -85,6 +89,20 @@ python -m scima.context_graph --trace I-204
 # Turn 1 (expand): 140 nodes  +<infrastructure within 3 hops>
 # Turn 2 (refresh): 140 nodes +Vehicle_Ambulance_3  -FlowSensor_A42 (stale)
 # Turn 3 (act): 140 nodes     dispatch grounded, assignedTo written back
+```
+
+Learn an ontology from source documents and watch the hallucination guard
+(Article 4):
+
+```bash
+python -m scima.ontology_learning --learn
+# Learned EmergencyProtocol hierarchy: 23 classes (v0.7 delta over v0.5).
+#   EmergencyProtocol > {Hazard, Utility, Traffic, PublicSafety, Escalation}Protocol
+
+python -m scima.ontology_learning --validate
+# LLM proposed 24 classes.
+# RITE review accepted 23, rejected 1.
+#   rejected (not grounded in sources): UnicornEvacuationProtocol
 ```
 
 Run the tests:
