@@ -3,7 +3,9 @@
 The recurring example from the *Building Agents That Work* series, built up
 layer by layer across the articles. It is a model in a control loop (Part 1)
 that searches Semantic Scholar, reads abstracts, and drafts a literature review,
-with the engineering disciplines from each part wired in.
+with the engineering disciplines from each part wired in. Part 18 zooms out one
+altitude: `loop.py` stacks the outer loops that run the agent without a human on
+the crank.
 
 ## Setup
 
@@ -36,6 +38,12 @@ python retrieval_eval.py
 
 # the confidence gate on its own (Part 17), offline
 python uncertainty.py
+
+# loop engineering (Part 18), fully offline: two morning runs of the four-loop
+# stack -> trigger, maker/verifier sub-agents, connectors, then tune_triage.
+# The morning_run body mirrors the article's loop.py sketch line for line.
+python loop.py
+python loop.py --live   # use the live run_subagent makers instead of the stub
 ```
 
 ## How the modules map to the series
@@ -54,6 +62,7 @@ python uncertainty.py
 | `hooks.py` | 8, 10, 1, 16 | `guard_file_writes`, `enforce_budget`, `require_approval` (human-in-the-loop gate), `log_call`; the Allow/Block contract |
 | `skills.py` + `skills/` | 8 | progressive-disclosure skill loader and the `systematic_review` SKILL.md |
 | `orchestrator.py` | 7, 8, 9, 13, 16 | the four layers assembled as a hierarchy (Part 9's verdict: not a peer mesh); model routing + progressive-disclosure output |
+| `loop.py` | 18 | the four-loop stack (agent / verification / event-driven / hill-climbing) wired into one `morning_run`; reuses `run_worker`, the Part 17 gate, the Part 14 graph, traces, and a state file. The outer loops, no new machinery |
 | `production.py` | 13 | model routing (`route`), version pinning (`pin_versions`), and the cost rollup (`cost_rollup`, the span tree is a bill) |
 | `uncertainty.py` | 16, 17 | the `assert_citation` confidence gate, detection signals ranked by trust, provenance-tagged `Claim`, and the resolve/ask/hedge/abstain `response_policy` |
 | `disclosure.py` | 16 | progressive disclosure of a run at three altitudes (summary / plan / trace) |
@@ -85,3 +94,8 @@ infrastructure, while keeping the *interface* the articles describe:
   (writes outside `output/`, overwrites, send/delete-class tools).
 - **`ask_user`** uses a console responder when a TTY is present and otherwise
   abstains, so the uncertainty path is exercised without blocking automation.
+- **The loop's feed and connectors** (`loop.py`) are stand-ins: the feed is a
+  fixed list where production polls arXiv / RSS / a webhook, and the digest and
+  human inbox are files where production calls a channel and an issue tracker
+  over MCP. The four-loop *architecture* is real and runs with no key on the
+  default stub maker; `--live` swaps in the live `run_worker` sub-agents.

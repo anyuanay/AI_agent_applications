@@ -4,7 +4,7 @@ Companion code for the **Generative AI Agents and Applications** series publishe
 
 Each directory in this repository contains full, runnable source code discussed in the series.
 
-Each project is built up layer by layer rather than as a fresh codebase per article. The **literature review agent** is the recurring example for *Building Agents That Work*: a flat tool-use loop in the early parts, then memory and retrieval, planning and orchestration, runtime primitives, safety, observability, evaluation, and uncertainty. The **SCIMA** agent backs *Ontology and Knowledge Graphs for Intelligent Agents*: one ontology and knowledge graph that grows from v0.1 onward. Each project's own README maps every module to the part or article that introduced it.
+Each project is built up layer by layer rather than as a fresh codebase per article. The **literature review agent** is the recurring example for *Building Agents That Work*: a flat tool-use loop in the early parts, then memory and retrieval, planning and orchestration, runtime primitives, safety, observability, evaluation, and uncertainty. The **SCIMA** agent backs *Ontology and Knowledge Graphs for Intelligent Agents*: one ontology and knowledge graph that grows from v0.1 onward, from OWL building blocks through knowledge graphs, context graphs, and ontology extraction, with a separate set of composable extraction skills alongside the backing package. Each project's own README maps every module to the part or article that introduced it.
 
 ---
 
@@ -12,8 +12,9 @@ Each project is built up layer by layer rather than as a fresh codebase per arti
 
 | Directory | Spans | Description |
 |-----------|-------|-------------|
-| [`lit_review_agent/`](./lit_review_agent/) | Parts 1–17 | An agent that searches Semantic Scholar, reads abstracts, and drafts a literature review. Grows across the series to include a vector store and property-graph memory, a plan/sub-agent orchestrator, skills and hooks, prompt-injection defenses, span-based tracing, model routing and cost rollups, an offline evaluation suite, progressive disclosure, and a confidence gate. |
-| [`ontology_kg_for_agents/`](./ontology_kg_for_agents/) | Articles 1–2+ | **SCIMA**, the SmartCity Infrastructure Management Agent. One coherent ontology and knowledge graph that grows alongside the *Ontology and Knowledge Graphs for Intelligent Agents* series: OWL DL building blocks, versioned SCIMA-OWL files, triple population, named graphs, SPARQL, and geo queries, with tests that keep the published code honest. |
+| [`lit_review_agent/`](./lit_review_agent/) | Parts 1–18 | An agent that searches Semantic Scholar, reads abstracts, and drafts a literature review. Grows across the series to include a vector store and property-graph memory, a plan/sub-agent orchestrator, skills and hooks, prompt-injection defenses, span-based tracing, model routing and cost rollups, an offline evaluation suite, progressive disclosure, a confidence gate, and a stacked outer-loop system (event-driven trigger, verification loop, and hill-climbing). |
+| [`ontology_kg_for_agents/`](./ontology_kg_for_agents/) | Articles 1–4+ | **SCIMA**, the SmartCity Infrastructure Management Agent. One coherent ontology and knowledge graph that grows alongside the *Ontology and Knowledge Graphs for Intelligent Agents* series: OWL DL building blocks, versioned SCIMA-OWL files (v0.1 → v0.7), triple population, named graphs, SPARQL and geo queries, k-hop context graphs with relevance scoring and eviction, and LLM-driven ontology extraction with a RITE hallucination guard, with tests that pin every ontology version to the series Growth Tracker. |
+| [`ontology_KG_extraction_skills/`](./ontology_KG_extraction_skills/) | Article 4 | Composable agent skills that extract and refine an OWL class hierarchy from source documents: `extract-concepts` → `induce-schema` → `cluster-classes` → `refine-ontology` → `serialize-owl`. Each stage is a self-contained `SKILL.md`; scripts import the real functions from the SCIMA package so the skills and backing code never drift. |
 
 More projects will be added as the series continues.
 
@@ -26,7 +27,7 @@ Each project is self-contained. Navigate into the project directory and follow t
 ### Prerequisites
 
 - Python 3.11+
-- An [Anthropic API key](https://console.anthropic.com/) for the live literature review agent. Its evaluation suite, retrieval eval, graph traversals, memory, and hooks all run offline with no key. The SCIMA ontology and knowledge graph project runs entirely offline.
+- An [Anthropic API key](https://console.anthropic.com/) for the live literature review agent. Its evaluation suite, retrieval eval, graph traversals, memory, and hooks all run offline with no key. The SCIMA ontology and knowledge graph project runs entirely offline, including the ontology-extraction pipeline (it ships an offline deterministic stub LLM client).
 
 ### Setup
 
@@ -61,6 +62,7 @@ Output is saved to `lit_review_agent/output/`.
 python eval_suite.py       # the eval ladder: worker-B abstain, parser regression, confidence gate
 python retrieval_eval.py   # the Recall@k retrieval slice
 python uncertainty.py      # the confidence gate on its own
+python loop.py             # Part 18: two morning runs of the four-loop stack (add --live for real makers)
 ```
 
 ### Running the SCIMA ontology / knowledge graph (no API key)
@@ -68,15 +70,28 @@ python uncertainty.py      # the confidence gate on its own
 ```bash
 cd ontology_kg_for_agents
 
-# Inspect the v0.1 ontology
+# Article 1: inspect the v0.1 ontology
 python -m scima.ontology
 
-# Populate the v0.2 knowledge graph and run the geo query
+# Article 2: populate the v0.2 knowledge graph and run the geo query
 python -m scima.knowledge_graph --populate sample --query lights-near I-204
+
+# Article 3: build a context graph and trace its evolution across agent turns
+python -m scima.context_graph --build --focal Incident_I204 --goal resolve
+python -m scima.context_graph --trace I-204
+
+# Article 4: learn an ontology from sources and watch the hallucination guard
+python -m scima.ontology_learning --learn
+python -m scima.ontology_learning --validate
 
 # Run the tests that pin each article's ontology to its Growth Tracker
 pytest
 ```
+
+The Article 4 extraction pipeline is also packaged as composable agent skills
+(`extract-concepts` → `induce-schema` → `cluster-classes` → `refine-ontology`
+→ `serialize-owl`) under `ontology_KG_extraction_skills/`; see that directory's
+README for running each stage.
 
 ---
 
@@ -87,6 +102,7 @@ pytest
 ├── lit_review_agent/       # The recurring example, built across Parts 1-17
 │   ├── harness.py          # Control loop, system prompt, tool registry (incl. ask_user), tracing + hooks + provenance, run_worker
 │   ├── orchestrator.py     # Plan -> parallel sub-agents -> synthesize -> reflect -> save, with model routing
+│   ├── loop.py             # Part 18: the four-loop stack (agent / verification / event-driven / hill-climbing)
 │   ├── tools.py            # search / fetch / save / done / ask_user, structured errors, untrusted envelope, graph ingestion, parse_year_range
 │   ├── tools_server.py     # The same tools as an optional MCP server
 │   ├── memory.py           # PaperMemory (remember / recall) and trim_for_window
@@ -112,11 +128,15 @@ pytest
 │   ├── scima/              # The SCIMA package (grows across the series)
 │   │   ├── ontology.py         # Load + inspect versioned SCIMA-OWL files
 │   │   ├── building_blocks.py  # Article 1: classes, individuals, properties, axioms
-│   │   └── knowledge_graph.py  # Article 2: populate triples, named graphs, SPARQL, geo query
-│   ├── ontologies/         # Canonical SCIMA-OWL, one Turtle file per version
+│   │   ├── knowledge_graph.py  # Article 2: populate triples, named graphs, SPARQL, geo query
+│   │   ├── context_graph.py    # Article 3: k-hop projection, relevance scoring, turns, eviction
+│   │   └── ontology_learning.py # Article 4: Hearst extraction, LLM induction, clustering, RITE
+│   ├── ontologies/         # Canonical SCIMA-OWL, one Turtle file per version (v0.1 → v0.7)
 │   ├── tests/              # Per-article tests pinned to the Growth Tracker
 │   ├── requirements.txt
 │   └── README.md           # Article-to-code map and design notes
+├── ontology_KG_extraction_skills/ # Article 4: the ontology-extraction pipeline as agent skills
+│   └── ontology_extraction_skills/ # extract-concepts, induce-schema, cluster-classes, refine-ontology, serialize-owl
 └── README.md
 ```
 
