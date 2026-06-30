@@ -1,0 +1,4 @@
+# Stage 3 (synthesis): synthesize structure
+google-genai>=1.0   # LLM ontology synthesis (gemini-3.1-flash-lite)
+# GOOGLE_API_KEY must be set in a .env file.
+# model.py and reason.py are pure standard library (no numpy/sklearn needed here).

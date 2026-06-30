@@ -93,7 +93,7 @@ class ScimaKnowledgeGraph:
     def __init__(self) -> None:
         self.ds = Dataset(default_union=True)
         # Schema goes in the default graph.
-        self.ds.default_graph.parse(_V0_2, format="turtle")
+        self.ds.default_context.parse(_V0_2, format="turtle")
 
     # ---- population ---------------------------------------------------
     def populate_sample(self, n_cameras: int = DEFAULT_CAMERAS,
@@ -213,7 +213,7 @@ class ScimaKnowledgeGraph:
             + len(set(self.ds.subjects(RDF.type, SCIMA.SensorReading)))
         )
         named = [g for g in self.ds.graphs()
-                 if g.identifier != self.ds.default_graph.identifier]
+                 if g.identifier != self.ds.default_context.identifier]
         return KGStats(
             version="v0.2",
             n_triples=len(self.ds),
@@ -246,7 +246,7 @@ def _cli(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
 
     kg = ScimaKnowledgeGraph()
-    summary = kg.ds.default_graph  # schema graph
+    summary = kg.ds.default_context  # schema graph
     onto_classes = len(set(summary.subjects(RDF.type, URIRef(
         "http://www.w3.org/2002/07/owl#Class"))))
     obj_props = len(set(summary.subjects(RDF.type, URIRef(

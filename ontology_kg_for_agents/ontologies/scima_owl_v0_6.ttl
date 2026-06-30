@@ -1,0 +1,301 @@
+# =====================================================================
+# SCIMA-OWL v0.6  (Article 4: Extracting Ontologies from Sources)
+# SmartCity Infrastructure Management Agent.
+#
+# v0.6 is the first version *learned from sources* rather than authored by
+# hand. The four-stage extraction pipeline (Surface, Name, Structure,
+# Review) reads an emergency-procedures corpus and proposes a delta, which
+# after the agentic RITE review becomes this file. Growth Tracker target
+# (cumulative):
+#   26 classes, 34 properties (19 object + 15 datatype), 15 axioms.
+# Delta over v0.5: 8 new classes, 4 new properties, 3 new axioms.
+#
+# Two of the new classes reuse parents from earlier versions
+# (IncidentCommander under the v0.5 Agent, HazMatSpill under the v0.2
+# Incident), so the learned vocabulary extends the hand-authored schema
+# rather than duplicating it. The LLM candidate CrisisManager was rejected
+# in review (no corpus grounding) and is therefore absent here; the coined
+# HazardProtocol parent was demoted to the single HazardousMaterialProtocol.
+#
+# This file is the canonical, hand-curated schema (the source of truth for
+# tooling and tests). `python -m scima.ontology_extraction --emit` writes a
+# machine-serialized copy under build/ with the same counts; this file is the
+# readable one. The article shows a curated excerpt of this delta.
+# =====================================================================
+
+@prefix scima: <http://scima.city/ontology#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix prov:  <http://www.w3.org/ns/prov#> .
+
+# --- Ontology header ---
+<http://scima.city/ontology> a owl:Ontology ;
+    owl:versionInfo "0.6" ;
+    owl:priorVersion <http://scima.city/ontology/v0.5> ;
+    rdfs:label "SCIMA-OWL" ;
+    rdfs:comment "Emergency-response vocabulary extracted from a procedures corpus." .
+
+# =====================================================================
+# CLASSES (26 = 18 from v0.5 + 8 learned)
+# =====================================================================
+
+# --- Top level concept (v0.1) ---
+scima:InfrastructureEntity a owl:Class ;
+    rdfs:label "Infrastructure Entity" ;
+    rdfs:comment "Any managed piece of physical city infrastructure." .
+
+# --- Infrastructure subclasses (v0.1) ---
+scima:RoadSegment a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Road Segment" .
+
+scima:TrafficLight a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Traffic Light" .
+
+scima:PowerNode a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Power Node" .
+
+scima:WaterMain a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Water Main" .
+
+# --- Sensing (v0.1) ---
+scima:SensorDevice a owl:Class ;
+    rdfs:label "Sensor Device" ;
+    rdfs:comment "A device that observes the state of infrastructure." .
+
+scima:SensorReading a owl:Class ;
+    rdfs:label "Sensor Reading" ;
+    rdfs:comment "A single timestamped observation from a sensor device." .
+
+# --- Disruptive events (v0.1) ---
+scima:Incident a owl:Class ;
+    rdfs:label "Incident" ;
+    rdfs:comment "A disruptive event affecting one or more infrastructure entities." .
+
+# --- Concrete sensor kinds + transit (v0.2) ---
+scima:TrafficCamera a owl:Class ;
+    rdfs:subClassOf scima:SensorDevice ;
+    rdfs:label "Traffic Camera" .
+
+scima:FlowSensor a owl:Class ;
+    rdfs:subClassOf scima:SensorDevice ;
+    rdfs:label "Flow Sensor" .
+
+scima:PowerMeter a owl:Class ;
+    rdfs:subClassOf scima:SensorDevice ;
+    rdfs:label "Power Meter" .
+
+scima:TransitStop a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Transit Stop" .
+
+# --- Agents, goals, working memory, vehicles (v0.5) ---
+scima:Agent a owl:Class ;
+    rdfs:label "Agent" ;
+    rdfs:comment "An autonomous decision maker that perceives, plans, and acts." .
+
+scima:ZoneAgent a owl:Class ;
+    rdfs:subClassOf scima:Agent ;
+    rdfs:label "Zone Agent" ;
+    rdfs:comment "An agent responsible for one district of the city." .
+
+scima:DispatchAgent a owl:Class ;
+    rdfs:subClassOf scima:Agent ;
+    rdfs:label "Dispatch Agent" ;
+    rdfs:comment "An agent that assigns vehicles and crews to incidents." .
+
+scima:GoalState a owl:Class ;
+    rdfs:label "Goal State" ;
+    rdfs:comment "A target world state an agent is committed to bringing about." .
+
+scima:ContextGraph a owl:Class ;
+    rdfs:label "Context Graph" ;
+    rdfs:comment "A task-scoped projection of the KG that an agent reasons over." .
+
+scima:Vehicle a owl:Class ;
+    rdfs:label "Vehicle" ;
+    rdfs:comment "A mobile resource such as an ambulance, crew truck, or bus." .
+
+# =====================================================================
+# NEW in v0.6 (8 learned classes). Each extracted class carries the corpus
+# span it was derived from; coined classes carry no span and are justified
+# structurally (by their children).
+# =====================================================================
+
+# --- (19) Extracted, attached under the v0.5 Agent by a Hearst-stated is-a ---
+scima:IncidentCommander a owl:Class ;
+    rdfs:subClassOf scima:Agent ;
+    rdfs:label "Incident Commander" ;
+    skos:altLabel "IC" ;
+    prov:wasDerivedFrom <corpus/emergency_procedures.txt#span_incident_commander> .
+
+# --- (20) Extracted, attached under the v0.2 Incident ---
+scima:HazMatSpill a owl:Class ;
+    rdfs:subClassOf scima:Incident ;
+    rdfs:label "Hazardous Material Spill" ;
+    skos:altLabel "hazardous-material spill" ;
+    prov:wasDerivedFrom <corpus/emergency_procedures.txt#span_hazmat_spill> .
+
+# --- (21) COINED parent: no single span; justified by 3 grounded children ---
+scima:ResponderUnit a owl:Class ;
+    rdfs:label "Responder Unit" ;
+    rdfs:comment "Coined in Stage 3 to group the responder units that cluster together; accepted in review on 3 grounded children." .
+
+# --- (22-24) Extracted units that cluster under the coined ResponderUnit ---
+scima:HazmatTeam a owl:Class ;
+    rdfs:subClassOf scima:ResponderUnit ;
+    rdfs:label "Hazmat Team" ;
+    prov:wasDerivedFrom <corpus/emergency_procedures.txt#span_hazmat_team> .
+
+scima:FireDepartment a owl:Class ;
+    rdfs:subClassOf scima:ResponderUnit ;
+    rdfs:label "Fire Department" ;
+    prov:wasDerivedFrom <corpus/emergency_procedures.txt#span_fire_department> .
+
+scima:EmergencyMedicalService a owl:Class ;
+    rdfs:subClassOf scima:ResponderUnit ;
+    rdfs:label "Emergency Medical Service" ;
+    prov:wasDerivedFrom <corpus/emergency_procedures.txt#span_ems> .
+
+# --- (25) Extracted. The coined HazardProtocol parent was DEMOTED to this
+#          rename in Stage 4 (only one grounded child), so it stands alone. ---
+scima:HazardousMaterialProtocol a owl:Class ;
+    rdfs:label "Hazardous Material Protocol" ;
+    skos:altLabel "hazardous-material protocol" ;
+    prov:wasDerivedFrom <corpus/emergency_procedures.txt#span_hazmat_protocol> .
+
+# --- (26) Extracted ORPHAN: no confident parent; parked under the domain
+#          top and flagged for the next extraction pass, not discarded. ---
+scima:EvacuationZone a owl:Class ;
+    rdfs:label "Evacuation Zone" ;
+    rdfs:comment "Orphan from Stage 3; admitted as the range of scima:designates and flagged for re-parenting." ;
+    prov:wasDerivedFrom <corpus/emergency_procedures.txt#span_evacuation_zone> .
+
+# =====================================================================
+# PROPERTIES (34 = 30 from v0.5 + 4 learned)
+# =====================================================================
+
+# --- Object properties from v0.2 (8) ---
+scima:locatedOn a owl:ObjectProperty ;
+    rdfs:domain scima:TrafficLight ; rdfs:range scima:RoadSegment ; rdfs:label "located on" .
+scima:monitors a owl:ObjectProperty ;
+    rdfs:domain scima:SensorDevice ; rdfs:range scima:InfrastructureEntity ; rdfs:label "monitors" .
+scima:hasReading a owl:ObjectProperty ;
+    rdfs:domain scima:SensorDevice ; rdfs:range scima:SensorReading ; rdfs:label "has reading" .
+scima:affects a owl:ObjectProperty ;
+    rdfs:domain scima:Incident ; rdfs:range scima:InfrastructureEntity ; rdfs:label "affects" .
+scima:connectedTo a owl:ObjectProperty ;
+    rdfs:domain scima:RoadSegment ; rdfs:range scima:RoadSegment ; rdfs:label "connected to" .
+scima:poweredBy a owl:ObjectProperty ;
+    rdfs:domain scima:InfrastructureEntity ; rdfs:range scima:PowerNode ; rdfs:label "powered by" .
+scima:recordedBy a owl:ObjectProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range scima:SensorDevice ; rdfs:label "recorded by" .
+scima:servesStop a owl:ObjectProperty ;
+    rdfs:domain scima:RoadSegment ; rdfs:range scima:TransitStop ; rdfs:label "serves stop" .
+
+# --- Object properties from v0.5 (7) ---
+scima:pursuesGoal a owl:ObjectProperty ;
+    rdfs:domain scima:Agent ; rdfs:range scima:GoalState ; rdfs:label "pursues goal" .
+scima:targets a owl:ObjectProperty ;
+    rdfs:domain scima:GoalState ; rdfs:range scima:InfrastructureEntity ; rdfs:label "targets" .
+scima:respondsTo a owl:ObjectProperty ;
+    rdfs:domain scima:Agent ; rdfs:range scima:Incident ; rdfs:label "responds to" .
+scima:managedBy a owl:ObjectProperty ;
+    rdfs:domain scima:InfrastructureEntity ; rdfs:range scima:ZoneAgent ; rdfs:label "managed by" .
+scima:hasFocalEntity a owl:ObjectProperty ;
+    rdfs:domain scima:ContextGraph ; rdfs:label "has focal entity" .
+scima:includesEntity a owl:ObjectProperty ;
+    rdfs:domain scima:ContextGraph ; rdfs:label "includes entity" .
+scima:assignedTo a owl:ObjectProperty ;
+    rdfs:domain scima:Vehicle ; rdfs:range scima:Incident ; rdfs:label "assigned to" .
+
+# --- NEW object properties in v0.6 (4): extracted from the corpus, with
+#     domain/range lifted to the most general still-correct class. ---
+scima:commands a owl:ObjectProperty ;
+    rdfs:domain scima:IncidentCommander ; rdfs:range scima:Incident ;
+    rdfs:label "commands" ;
+    rdfs:comment "An incident commander directs the response to an incident." .
+
+scima:dispatchedTo a owl:ObjectProperty ;
+    rdfs:domain scima:ResponderUnit ; rdfs:range scima:Incident ;
+    rdfs:label "dispatched to" ;
+    rdfs:comment "A responder unit is sent to an incident. Domain lifted to the coined ResponderUnit." .
+
+scima:designates a owl:ObjectProperty ;
+    rdfs:domain scima:IncidentCommander ; rdfs:range scima:EvacuationZone ;
+    rdfs:label "designates" ;
+    rdfs:comment "An incident commander establishes an evacuation zone." .
+
+scima:followsProtocol a owl:ObjectProperty ;
+    rdfs:domain scima:ResponderUnit ; rdfs:range scima:HazardousMaterialProtocol ;
+    rdfs:label "follows protocol" ;
+    rdfs:comment "A responder unit must follow a protocol before acting." .
+
+# --- Datatype properties from v0.2 (12) ---
+scima:hasSpeedLimit a owl:DatatypeProperty ;
+    rdfs:domain scima:RoadSegment ; rdfs:range xsd:integer ; rdfs:label "has speed limit" .
+scima:hasIdentifier a owl:DatatypeProperty ;
+    rdfs:domain scima:InfrastructureEntity ; rdfs:range xsd:string ; rdfs:label "has identifier" .
+scima:timestamp a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:dateTime ; rdfs:label "timestamp" .
+scima:confidenceScore a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:decimal ; rdfs:label "confidence score" .
+scima:hasStatus a owl:DatatypeProperty ;
+    rdfs:domain scima:Incident ; rdfs:range xsd:string ; rdfs:label "has status" .
+scima:hasVoltage a owl:DatatypeProperty ;
+    rdfs:domain scima:PowerNode ; rdfs:range xsd:decimal ; rdfs:label "has voltage" .
+scima:observedValue a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:integer ; rdfs:label "observed value" .
+scima:hasTimestamp a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:dateTime ; rdfs:label "has timestamp" .
+scima:hasConfidenceScore a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:decimal ; rdfs:label "has confidence score" .
+scima:hasFlowRate a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:decimal ; rdfs:label "has flow rate" .
+scima:hasLatitude a owl:DatatypeProperty ;
+    rdfs:range xsd:decimal ; rdfs:label "has latitude" .
+scima:hasLongitude a owl:DatatypeProperty ;
+    rdfs:range xsd:decimal ; rdfs:label "has longitude" .
+
+# --- Datatype properties from v0.5 (3) ---
+scima:relevanceScore a owl:DatatypeProperty ;
+    rdfs:range xsd:decimal ; rdfs:label "relevance score" .
+scima:hopDistance a owl:DatatypeProperty ;
+    rdfs:range xsd:integer ; rdfs:label "hop distance" .
+scima:hasAvailability a owl:DatatypeProperty ;
+    rdfs:domain scima:Vehicle ; rdfs:range xsd:string ; rdfs:label "has availability" .
+
+# =====================================================================
+# AXIOMS (15 = 12 from v0.5 + 3 learned)  beyond basic subclass/domain/range
+# Counted by scima/ontology.py: owl:disjointWith + property characteristics.
+# =====================================================================
+
+# --- Disjointness from v0.1/v0.2 (5) ---
+scima:RoadSegment owl:disjointWith scima:TrafficLight .
+scima:RoadSegment owl:disjointWith scima:PowerNode .
+scima:PowerNode   owl:disjointWith scima:WaterMain .
+scima:SensorDevice  owl:disjointWith scima:InfrastructureEntity .
+scima:SensorReading owl:disjointWith scima:SensorDevice .
+
+# --- Property characteristics from v0.1/v0.2 (3) ---
+scima:connectedTo a owl:SymmetricProperty .
+scima:hasIdentifier a owl:FunctionalProperty .
+scima:recordedBy a owl:FunctionalProperty .
+
+# --- Disjointness / characteristic from v0.5 (4) ---
+scima:Agent owl:disjointWith scima:InfrastructureEntity .
+scima:Agent owl:disjointWith scima:SensorDevice .
+scima:ZoneAgent owl:disjointWith scima:DispatchAgent .
+scima:hasFocalEntity a owl:FunctionalProperty .
+
+# --- NEW in v0.6 (3): the three responder units are mutually disjoint.
+#     Emitted in Stage 3, checked by the reasoner, and admitted in Stage 4. ---
+scima:HazmatTeam     owl:disjointWith scima:FireDepartment .
+scima:HazmatTeam     owl:disjointWith scima:EmergencyMedicalService .
+scima:FireDepartment owl:disjointWith scima:EmergencyMedicalService .

@@ -14,8 +14,14 @@ Module map (grows with the series):
                     SPARQL helpers, geo queries (Article 2)
     context_graph   k-hop projection, relevance scoring, turn-by-turn
                     eviction and write-back (Article 3)
-    ontology_learning  NER, LLM schema induction, clustering, and the RITE
-                    review loop that learns new classes from text (Article 4)
+    ontology_extraction  the seven-stage Scope/Surface/Sort/Name/Salience/
+                    Structure/Review pipeline that learns new classes from
+                    text, with the type/instance gate and the agentic RITE
+                    review loop (Article 4)
+    kg_extraction   schema-first extraction of an ontology-compliant knowledge
+                    graph (the A-Box) from sources, with the four-verdict
+                    compliance gate (admit/repair/quarantine/reject), SHACL
+                    shape validation, and a reasoner consistency pass (Article 5)
 """
 
 __all__ = [
@@ -23,12 +29,13 @@ __all__ = [
     "building_blocks",
     "knowledge_graph",
     "context_graph",
-    "ontology_learning",
+    "ontology_extraction",
+    "kg_extraction",
 ]
 
 ONTOLOGY_VERSIONS = {
     "v0.1": "scima_owl_v0_1.ttl",  # Article 1: core class hierarchy
     "v0.2": "scima_owl_v0_2.ttl",  # Article 2: sensing vocabulary for KG population
     "v0.5": "scima_owl_v0_5.ttl",  # Article 3: agent, goal, context-graph vocabulary
-    "v0.7": "scima_owl_v0_7.ttl",  # Article 4: learned EmergencyProtocol hierarchy
+    "v0.6": "scima_owl_v0_6.ttl",  # Article 4: emergency-response vocabulary extracted from sources
 }

@@ -1,0 +1,2 @@
+# Stage 2b: Rank by salience
+# Pure Python standard library; no external dependencies and no API keys.
