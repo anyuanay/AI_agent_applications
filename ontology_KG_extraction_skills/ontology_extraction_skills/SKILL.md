@@ -108,5 +108,5 @@ python stage4-review-ontology/scripts/review_ontology.py SRC_candidates_gated_vo
 
 This pipeline learns the **ontology** (the T-Box). Populating an
 ontology-compliant **knowledge graph** (the A-Box) from sources, given that
-ontology, is the separate job covered by Article 5 of the companion series and
-its `scima/kg_extraction.py`.
+ontology, is the separate job that will be covered by Article 5 of the companion
+series (approach TBD).

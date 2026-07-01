@@ -18,10 +18,9 @@ Module map (grows with the series):
                     Structure/Review pipeline that learns new classes from
                     text, with the type/instance gate and the agentic RITE
                     review loop (Article 4)
-    kg_extraction   schema-first extraction of an ontology-compliant knowledge
-                    graph (the A-Box) from sources, with the four-verdict
-                    compliance gate (admit/repair/quarantine/reject), SHACL
-                    shape validation, and a reasoner consistency pass (Article 5)
+    kg_extraction   the three-stage Extract/Map/Verify-Admit pipeline that
+                    populates an A-Box from source text against a fixed
+                    ontology contract (Article 5)
 """
 
 __all__ = [
@@ -38,4 +37,5 @@ ONTOLOGY_VERSIONS = {
     "v0.2": "scima_owl_v0_2.ttl",  # Article 2: sensing vocabulary for KG population
     "v0.5": "scima_owl_v0_5.ttl",  # Article 3: agent, goal, context-graph vocabulary
     "v0.6": "scima_owl_v0_6.ttl",  # Article 4: emergency-response vocabulary extracted from sources
+    "v0.8": "scima_owl_v0_8.ttl",  # Article 5: KG extraction vocabulary with functional constraints
 }

@@ -31,6 +31,7 @@ _VERSION_FILES = {
     "v0.2": "scima_owl_v0_2.ttl",
     "v0.5": "scima_owl_v0_5.ttl",
     "v0.6": "scima_owl_v0_6.ttl",
+    "v0.8": "scima_owl_v0_8.ttl",  # Article 5: KG extraction vocabulary
 }
 
 

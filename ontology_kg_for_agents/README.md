@@ -21,21 +21,17 @@ ontology_kg_for_agents/
 │   ├── building_blocks.py     # Article 1: classes, individuals, properties, axioms
 │   ├── knowledge_graph.py     # Article 2: populate triples, named graphs, SPARQL, geo query
 │   ├── context_graph.py       # Article 3: k-hop projection, relevance scoring, turns, eviction
-│   ├── ontology_extraction.py # Article 4: seven-stage Scope/Surface/Sort/Name/Salience/Structure/Review + RITE
-│   └── kg_extraction.py       # Article 5: schema-first KG extraction + four-verdict compliance gate
+│   └── ontology_extraction.py # Article 4: seven-stage Scope/Surface/Sort/Name/Salience/Structure/Review + RITE
 ├── ontologies/                # canonical SCIMA-OWL, one file per version
 │   ├── scima_owl_v0_1.ttl     # Article 1 (8 classes, 12 properties, 5 axioms)
 │   ├── scima_owl_v0_2.ttl     # Article 2 (12 classes, 20 properties, 8 axioms)
 │   ├── scima_owl_v0_5.ttl     # Article 3 (18 classes, 30 properties, 12 axioms)
 │   └── scima_owl_v0_6.ttl     # Article 4 (26 classes, 34 properties, 15 axioms)
-├── shapes/
-│   └── scima_shacl_v0_6.ttl   # Article 5: SHACL shapes generated from SCIMA-OWL v0.6
 └── tests/
     ├── test_article_01.py     # asserts v0.1 matches the Growth Tracker
     ├── test_article_02.py     # asserts v0.2 + SCIMA-KG population and queries
     ├── test_article_03.py     # asserts v0.5 + context-graph projection and turns
-    ├── test_article_04.py     # asserts v0.6 + the learned emergency-response delta
-    └── test_article_05.py     # asserts the compliance gate verdicts + a conformant A-Box
+    └── test_article_04.py     # asserts v0.6 + the learned emergency-response delta
 ```
 
 As the series proceeds, new modules join `scima/` (context graphs, belief
@@ -50,7 +46,6 @@ files join `ontologies/`, each with a matching test file.
 | 2 | Knowledge graphs, triples, SPARQL | `scima/knowledge_graph.py`, `ontologies/scima_owl_v0_2.ttl` |
 | 3 | Context graphs, dynamic working memory | `scima/context_graph.py`, `ontologies/scima_owl_v0_5.ttl` |
 | 4 | Extracting ontologies from sources | `scima/ontology_extraction.py`, `ontologies/scima_owl_v0_6.ttl` |
-| 5 | Extracting ontology-compliant KGs from sources | `scima/kg_extraction.py`, `shapes/scima_shacl_v0_6.ttl` |
 | ... | ... | ... |
 
 ## Setup
@@ -116,30 +111,6 @@ python -m scima.ontology_extraction --corpus corpus/emergency_procedures.txt
 python -m scima.ontology_extraction --emit   # machine copy under build/
 # Wrote SCIMA-OWL v0.6 -> scima_owl_v0_6.ttl: 26 classes, 34 properties, 15 axioms (cumulative)
 ```
-
-Extract an **ontology-compliant** knowledge graph from a source feed, gating
-every candidate triple against the fixed SCIMA-OWL v0.6 schema (Article 5):
-
-```bash
-python -m scima.kg_extraction --feed corpus/incident_report_I204.txt
-# Loaded SCIMA-OWL v0.6: 26 classes, 34 properties (19 object + 15 datatype), 15 axioms (fixed target schema)
-# Extracted 25 candidate triples from 1 feed (incident_report).
-# Compliance gate: 20 admitted, 1 repaired, 3 rejected, 1 quarantined.
-#   [REJECT] scima:IC_Diaz scima:authorizes scima:HMP_1   relation scima:authorizes not in ontology
-#   [REJECT] scima:FD_12 rdf:type scima:HazmatTeam        scima:HazmatTeam disjoint with already-asserted scima:FireDepartment
-#   [REJECT] scima:WM_7B scima:dispatchedTo scima:Incident_I204  domain violation: subject is not a scima:ResponderUnit
-#   [REPAIR] scima:Reading_R1 scima:observedValue 47      cast xsd:string->xsd:integer
-#   [QUARN ] scima:Incident_I205 rdf:type scima:HazMatSpill  confidence 0.40 < 0.5
-# Admitted A-Box: 21 triples, 10 typed individuals.
-# SHACL validation over admitted graph: conforms = True (0 violations).
-# Reasoner consistency: consistent = True.
-```
-
-The SHACL shapes in `shapes/scima_shacl_v0_6.ttl` are the standards-track form
-of the gate; the module runs the equivalent checks natively (pyshacl is
-optional, the same way `knowledge_graph.py` computes haversine instead of
-GeoSPARQL). Conformance is True by construction: the gate never admits a triple
-that would fail a shape.
 
 Run the tests:
 

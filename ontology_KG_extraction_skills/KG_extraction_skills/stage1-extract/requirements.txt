@@ -1,0 +1,6 @@
+# Stage 1: Extract entity mentions and raw triples
+spacy>=3.7
+# spaCy English model (install separately):
+#   python -m spacy download en_core_web_sm
+google-genai>=1.0   # Gemini LLM pass (google-genai SDK); not needed with --no-llm
+pydantic>=2.0       # optional: validates LLM responses
