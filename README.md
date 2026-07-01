@@ -2,7 +2,7 @@
 
 Companion code for the **Generative AI Agents and Applications** series published on [Medium](https://medium.com/@anyuanay).
 
-Each directory in this repository contains full, runnable source code discussed in the series.
+Each directory in this repository contains full, runnable source code discussed in the series. **Anyone is free to fork, adapt, and vibe-code this codebase to fit their own datasets, domains, and needs; nothing here is meant to be used as-is without adjustment.**
 
 Each project is built up layer by layer rather than as a fresh codebase per article. The **literature review agent** is the recurring example for *Building Agents That Work*: a flat tool-use loop in the early parts, then memory and retrieval, planning and orchestration, runtime primitives, safety, observability, evaluation, and uncertainty. The **SCIMA** agent backs *Ontology and Knowledge Graphs for Intelligent Agents*: one ontology and knowledge graph that grows from v0.1 through v0.8, from OWL building blocks through knowledge graphs, context graphs, ontology extraction, and ontology-compliant knowledge-graph extraction, with two parallel skill sets alongside the backing package: a seven-stage ontology-extraction skill set (Article 4) and a three-stage KG-extraction skill set (Article 5). Each project's own README maps every module to the part or article that introduced it.
 
