@@ -1,0 +1,6 @@
+# Stage 1: Surface candidates
+spacy>=3.7
+# spaCy English model (install separately):
+#   python -m spacy download en_core_web_sm
+google-genai>=1.0   # LLM extractor (Gemini); not needed with --no-llm
+pydantic>=2.0       # validates the LLM JSON reply; not needed with --no-llm

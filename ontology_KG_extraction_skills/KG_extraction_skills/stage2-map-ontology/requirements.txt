@@ -1,0 +1,5 @@
+# Stage 2: Map candidate triples to ontology IRIs
+rdflib>=6.0              # OWL/Turtle ontology parsing
+openai>=1.0              # text-embedding-3-small embeddings
+spacy>=3.7               # predicate lemmatization (en_core_web_sm)
+google-genai>=1.0        # Gemini LLM fallback; not needed with --no-llm

@@ -1,0 +1,4 @@
+# Stage 1b: Classify candidates (type/instance gate)
+# The deterministic gate needs only the Python standard library.
+google-genai>=1.0   # only for --llm (gemini-3.1-flash-lite type/instance tiebreak)
+# GOOGLE_API_KEY must be in a .env file when --llm is used.

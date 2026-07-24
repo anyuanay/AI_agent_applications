@@ -1,0 +1,5 @@
+# Stage 2: Name the vocabulary
+numpy>=1.24
+scikit-learn>=1.3          # (optional) available for clustering experiments
+openai>=1.0               # embeddings (text-embedding-3-small); not needed with --no-embeddings
+# OPENAI_API_KEY must be set in a .env file for semantic grouping.

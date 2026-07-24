@@ -1,0 +1,6 @@
+Commander Diaz commands HazmatTeam Alpha at the scene.
+HazmatTeam Alpha was dispatched to Incident I-204.
+Sensor Reading R1 recorded a value of 47 psi.
+WaterMain 7B was dispatched to Incident I-204.
+Commander Diaz commands HazmatTeam Gamma as reserve.
+Commander Diaz did not command HazmatTeam Bravo.

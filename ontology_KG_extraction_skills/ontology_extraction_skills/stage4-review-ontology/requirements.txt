@@ -1,0 +1,5 @@
+# Stage 4: Review the ontology (agentic RITE)
+# The deterministic review needs only the Python standard library.
+rdflib>=7.0          # only for --emit-ttl (Turtle serialization of the admitted ontology)
+google-genai>=1.0    # only for --llm (gemini-3.1-flash-lite naming of coined families)
+# GOOGLE_API_KEY must be in a .env file when --llm is used.

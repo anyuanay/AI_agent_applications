@@ -1,0 +1,222 @@
+# =====================================================================
+# SCIMA-OWL v0.2  (Article 2: Knowledge Graphs, Triples, RDF, Property Graphs)
+# SmartCity Infrastructure Management Agent.
+#
+# v0.2 extends v0.1 with the vocabulary one sensor feed needs to populate
+# a knowledge graph. Growth Tracker target (cumulative):
+#   12 classes, 20 properties (8 object + 12 datatype), 8 axioms.
+# Delta over v0.1: 4 new classes, 8 new properties, 3 new axioms.
+#
+# This file is the canonical schema; the article shows a curated excerpt.
+# Instance data (SCIMA-KG) is NOT in this file; it is generated into
+# per-feed named graphs by scima/knowledge_graph.py.
+# =====================================================================
+
+@prefix scima: <http://scima.city/ontology#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+
+# --- Ontology header ---
+<http://scima.city/ontology> a owl:Ontology ;
+    owl:versionInfo "0.2" ;
+    owl:priorVersion <http://scima.city/ontology/v0.1> ;
+    rdfs:label "SCIMA-OWL" ;
+    rdfs:comment "Sensing vocabulary for populating the SCIMA knowledge graph." .
+
+# =====================================================================
+# CLASSES (12 = 8 from v0.1 + 4 new)
+# =====================================================================
+
+# --- (1) Top level concept (v0.1) ---
+scima:InfrastructureEntity a owl:Class ;
+    rdfs:label "Infrastructure Entity" ;
+    rdfs:comment "Any managed piece of physical city infrastructure." .
+
+# --- (2-5) Infrastructure subclasses (v0.1) ---
+scima:RoadSegment a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Road Segment" .
+
+scima:TrafficLight a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Traffic Light" .
+
+scima:PowerNode a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Power Node" .
+
+scima:WaterMain a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Water Main" .
+
+# --- (6) Sensing devices (v0.1) ---
+scima:SensorDevice a owl:Class ;
+    rdfs:label "Sensor Device" ;
+    rdfs:comment "A device that observes the state of infrastructure." .
+
+# --- (7) Observations produced by sensors (v0.1) ---
+scima:SensorReading a owl:Class ;
+    rdfs:label "Sensor Reading" ;
+    rdfs:comment "A single timestamped observation from a sensor device." .
+
+# --- (8) Disruptive events (v0.1) ---
+scima:Incident a owl:Class ;
+    rdfs:label "Incident" ;
+    rdfs:comment "A disruptive event affecting one or more infrastructure entities." .
+
+# --- (9-11) NEW in v0.2: concrete sensor kinds, so a feed can type its devices ---
+scima:TrafficCamera a owl:Class ;
+    rdfs:subClassOf scima:SensorDevice ;
+    rdfs:label "Traffic Camera" ;
+    rdfs:comment "A camera that counts vehicles on a road segment." .
+
+scima:FlowSensor a owl:Class ;
+    rdfs:subClassOf scima:SensorDevice ;
+    rdfs:label "Flow Sensor" ;
+    rdfs:comment "A sensor measuring water or traffic flow rate." .
+
+scima:PowerMeter a owl:Class ;
+    rdfs:subClassOf scima:SensorDevice ;
+    rdfs:label "Power Meter" ;
+    rdfs:comment "A meter reading load at a power node." .
+
+# --- (12) NEW in v0.2: transit infrastructure (used when GTFS is ingested) ---
+scima:TransitStop a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Transit Stop" ;
+    rdfs:comment "A bus or transit stop served by a road segment." .
+
+# =====================================================================
+# PROPERTIES (20 = 12 from v0.1 + 8 new)
+# =====================================================================
+
+# --- Object properties from v0.1 (6) ---
+scima:locatedOn a owl:ObjectProperty ;
+    rdfs:domain scima:TrafficLight ;
+    rdfs:range  scima:RoadSegment ;
+    rdfs:label "located on" .
+
+scima:monitors a owl:ObjectProperty ;
+    rdfs:domain scima:SensorDevice ;
+    rdfs:range  scima:InfrastructureEntity ;
+    rdfs:label "monitors" .
+
+scima:hasReading a owl:ObjectProperty ;
+    rdfs:domain scima:SensorDevice ;
+    rdfs:range  scima:SensorReading ;
+    rdfs:label "has reading" .
+
+scima:affects a owl:ObjectProperty ;
+    rdfs:domain scima:Incident ;
+    rdfs:range  scima:InfrastructureEntity ;
+    rdfs:label "affects" .
+
+scima:connectedTo a owl:ObjectProperty ;
+    rdfs:domain scima:RoadSegment ;
+    rdfs:range  scima:RoadSegment ;
+    rdfs:label "connected to" .
+
+scima:poweredBy a owl:ObjectProperty ;
+    rdfs:domain scima:InfrastructureEntity ;
+    rdfs:range  scima:PowerNode ;
+    rdfs:label "powered by" .
+
+# --- NEW object properties in v0.2 (2) ---
+scima:recordedBy a owl:ObjectProperty ;
+    rdfs:domain scima:SensorReading ;
+    rdfs:range  scima:SensorDevice ;
+    rdfs:label "recorded by" ;
+    rdfs:comment "Links a reading to the device that produced it." .
+
+scima:servesStop a owl:ObjectProperty ;
+    rdfs:domain scima:RoadSegment ;
+    rdfs:range  scima:TransitStop ;
+    rdfs:label "serves stop" .
+
+# --- Datatype properties from v0.1 (6) ---
+scima:hasSpeedLimit a owl:DatatypeProperty ;
+    rdfs:domain scima:RoadSegment ;
+    rdfs:range  xsd:integer ;
+    rdfs:label "has speed limit" .
+
+scima:hasIdentifier a owl:DatatypeProperty ;
+    rdfs:domain scima:InfrastructureEntity ;
+    rdfs:range  xsd:string ;
+    rdfs:label "has identifier" .
+
+scima:timestamp a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ;
+    rdfs:range  xsd:dateTime ;
+    rdfs:label "timestamp" .
+
+scima:confidenceScore a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label "confidence score" .
+
+scima:hasStatus a owl:DatatypeProperty ;
+    rdfs:domain scima:Incident ;
+    rdfs:range  xsd:string ;
+    rdfs:label "has status" .
+
+scima:hasVoltage a owl:DatatypeProperty ;
+    rdfs:domain scima:PowerNode ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label "has voltage" .
+
+# --- NEW datatype properties in v0.2 (6) ---
+# Article 2 favours these explicit reading predicates in its snippets.
+scima:observedValue a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ;
+    rdfs:range  xsd:integer ;
+    rdfs:label "observed value" ;
+    rdfs:comment "The measured value of a reading, e.g. vehicles per minute." .
+
+scima:hasTimestamp a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ;
+    rdfs:range  xsd:dateTime ;
+    rdfs:label "has timestamp" .
+
+scima:hasConfidenceScore a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label "has confidence score" .
+
+scima:hasFlowRate a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label "has flow rate" .
+
+# Lightweight geometry: a planar stand-in for GeoSPARQL geo:hasGeometry,
+# so the codebase can compute distances without a full GeoSPARQL engine.
+scima:hasLatitude a owl:DatatypeProperty ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "has latitude" .
+
+scima:hasLongitude a owl:DatatypeProperty ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "has longitude" .
+
+# =====================================================================
+# AXIOMS (8 = 5 from v0.1 + 3 new)  beyond basic subclass/domain/range
+# =====================================================================
+
+# --- (1-3) Disjointness from v0.1 ---
+scima:RoadSegment owl:disjointWith scima:TrafficLight .
+scima:RoadSegment owl:disjointWith scima:PowerNode .
+scima:PowerNode   owl:disjointWith scima:WaterMain .
+
+# --- (4) Symmetric road connectivity (v0.1) ---
+scima:connectedTo a owl:SymmetricProperty .
+
+# --- (5) Each entity has at most one identifier (v0.1) ---
+scima:hasIdentifier a owl:FunctionalProperty .
+
+# --- (6-7) NEW in v0.2: sensing concepts are disjoint from what they describe ---
+scima:SensorDevice  owl:disjointWith scima:InfrastructureEntity .
+scima:SensorReading owl:disjointWith scima:SensorDevice .
+
+# --- (8) NEW in v0.2: a reading is recorded by exactly one device ---
+scima:recordedBy a owl:FunctionalProperty .

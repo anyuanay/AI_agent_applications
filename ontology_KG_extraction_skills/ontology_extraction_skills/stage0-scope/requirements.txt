@@ -1,0 +1,4 @@
+# Stage 0: Scope and summarize
+# Deterministic structure mining needs only the Python standard library.
+google-genai>=1.0   # only for --llm (gemini-3.1-flash-lite scope synthesis)
+# GOOGLE_API_KEY must be in a .env file when --llm is used.

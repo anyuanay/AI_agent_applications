@@ -1,0 +1,3 @@
+# Stage 3: Verify & Admit
+# No external dependencies beyond the Python standard library.
+# All inputs come from Stage 2 JSON files; no LLM or embedding calls needed.
