@@ -4,7 +4,7 @@ Companion code for the **Generative AI Agents and Applications** series publishe
 
 Each directory in this repository contains full, runnable source code discussed in the series. **Anyone is free to fork, adapt, and vibe-code this codebase to fit their own datasets, domains, and needs; nothing here is meant to be used as-is without adjustment.**
 
-Each project is built up layer by layer rather than as a fresh codebase per article. The **literature review agent** is the recurring example for *Building Agents That Work*: a flat tool-use loop in the early parts, then memory and retrieval, planning and orchestration, runtime primitives, safety, observability, evaluation, and uncertainty. The **SCIMA** agent backs *Ontology and Knowledge Graphs for Intelligent Agents*: one ontology and knowledge graph that grows from v0.1 through v0.8, from OWL building blocks through knowledge graphs, context graphs, ontology extraction, and ontology-compliant knowledge-graph extraction, with two parallel skill sets alongside the backing package: a seven-stage ontology-extraction skill set (Article 4) and a three-stage KG-extraction skill set (Article 5). Articles 6 through 9 are article-only installments that add no code: evaluating ontologies and KGs (6), stochastic ontology (7, time-indexed belief snapshots plus a transition law, and why knowledge tracing requires the process view), ontology update rules with Bayesian updates and belief revision (8, introducing SCIMA-OWL v1.0 temporal versioning), and Age of Information, staleness, and forgetting in KGs (9). The runnable belief-update package they set up is still pending. Each project's own README maps every module to the part or article that introduced it.
+Each project is built up layer by layer rather than as a fresh codebase per article. The **literature review agent** is the recurring example for *Building Agents That Work*: a flat tool-use loop in the early parts, then memory and retrieval, planning and orchestration, runtime primitives, safety, observability, evaluation, and uncertainty. The **SCIMA** agent backs *Ontology and Knowledge Graphs for Intelligent Agents*: one ontology and knowledge graph that grows from v0.1 through v1.0, from OWL building blocks through knowledge graphs, context graphs, ontology extraction, ontology-compliant knowledge-graph extraction, and cost-efficient agent search, with two parallel skill sets alongside the backing package: a seven-stage ontology-extraction skill set (Article 4) and a three-stage KG-extraction skill set (Article 5). Articles 6 through 9 are article-only installments that add no modules: evaluating ontologies and KGs (6), stochastic ontology (7, time-indexed belief snapshots plus a transition law, and why knowledge tracing requires the process view), ontology update rules with Bayesian updates and belief revision (8, introducing SCIMA-OWL v1.0 temporal versioning), and Age of Information, staleness, and forgetting in KGs (9). The runnable belief-update package they set up is still pending. Article 10 returns to code with `scima/agent_search.py`, which derives a walk's predicate set from the schema, runs a relation-guided beam search under an admissible bound, sets cache lifetimes from measured change rates, and prices every search design in tokens, dollars, and seconds. It also carries the Pillar 3 material forward into the search itself, ranking candidates by expected time once the age of each one's evidence is priced in, reporting what a multi-hop answer is actually worth, and treating every change rate as an estimate of a moving quantity rather than a constant. Each project's own README maps every module to the part or article that introduced it.
 
 ---
 
@@ -13,7 +13,7 @@ Each project is built up layer by layer rather than as a fresh codebase per arti
 | Directory                                                            | Spans      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | -------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`lit_review_agent/`](./lit_review_agent/)                           | Parts 1–18 | An agent that searches Semantic Scholar, reads abstracts, and drafts a literature review. Grows across the series to include a vector store and property-graph memory, a plan/sub-agent orchestrator, skills and hooks, prompt-injection defenses, span-based tracing, model routing and cost rollups, an offline evaluation suite, progressive disclosure, a confidence gate, and a stacked outer-loop system (event-driven trigger, verification loop, and hill-climbing).                                                                                                                                                                                                                                                                                                             |
-| [`ontology_kg_for_agents/`](./ontology_kg_for_agents/)               |            | **SCIMA**, the SmartCity Infrastructure Management Agent. One coherent ontology and knowledge graph that grows alongside the *Ontology and Knowledge Graphs for Intelligent Agents* series: OWL DL building blocks, versioned SCIMA-OWL files (v0.1 through v0.8), triple population, named graphs, SPARQL and geo queries, k-hop context graphs with relevance scoring and eviction, the seven-stage ontology-extraction pipeline with a RITE review guard (Article 4), and a three-stage Extract/Map/Verify pipeline that populates an ontology-compliant A-Box with a five-check compliance gate (domain, range, datatype repair, disjointness, cardinality) against SCIMA-OWL v0.8 (Article 5). Articles 6 through 9 are article-only: evaluation of the v0.8 artifacts (6), then the stochastic layer split across three articles (time-indexed belief snapshots, transition laws, and predict-correct knowledge tracing in 7; Bayesian updates and belief revision with SCIMA-OWL v1.0 temporal versioning in 8; Age of Information, staleness, and transition-law-derived forgetting factors in 9) as execution-verified worked examples, with the runnable belief layer still pending. Tests pin every ontology version to the series Growth Tracker.                       |
+| [`ontology_kg_for_agents/`](./ontology_kg_for_agents/)               |            | **SCIMA**, the SmartCity Infrastructure Management Agent. One coherent ontology and knowledge graph that grows alongside the *Ontology and Knowledge Graphs for Intelligent Agents* series: OWL DL building blocks, versioned SCIMA-OWL files (v0.1 through v1.0), triple population, named graphs, SPARQL and geo queries, k-hop context graphs with relevance scoring and eviction, the seven-stage ontology-extraction pipeline with a RITE review guard (Article 4), and a three-stage Extract/Map/Verify pipeline that populates an ontology-compliant A-Box with a five-check compliance gate (domain, range, datatype repair, disjointness, cardinality) against SCIMA-OWL v0.8 (Article 5). Articles 6 through 9 are article-only: evaluation of the v0.8 artifacts (6), then the stochastic layer split across three articles (time-indexed belief snapshots, transition laws, and predict-correct knowledge tracing in 7; Bayesian updates and belief revision with SCIMA-OWL v1.0 temporal versioning in 8; Age of Information, staleness, and transition-law-derived forgetting factors in 9) as execution-verified worked examples, with the runnable belief layer still pending. Article 10 adds the search layer on SCIMA-OWL v1.0 (43 classes, 53 properties, 21 axioms): a predicate set derived by searching the schema for routes to the goal class rather than typed by hand, a relation-guided beam walk with an admissible straight-line bound that finds the right ambulance in 11 node visits instead of 800 record reads, per-predicate cache lifetimes computed from measured half-lives, candidate ranking by expected time that weights each vehicle by the age of its own status evidence and flips the answer when that evidence goes stale, a surge case showing that a lifetime frozen in a config file drives stale dispatches from 5.3 to 14.2 percent while the cache reports nothing wrong, and a cost model that prices every design in tokens, dollars, and seconds. Tests pin every ontology version to the series Growth Tracker and every published figure to an assertion.                       |
 | [`ontology_KG_extraction_skills/`](./ontology_KG_extraction_skills/) |            | Two parallel sets of composable agent skills, one per article. `ontology_extraction_skills/` packages the Article 4 ontology-extraction pipeline as seven self-contained stage skills (`stage0-scope` through `stage4-review-ontology`), with a top-level `ontology-extraction` entry skill and `scripts/run_pipeline.py` that chain all stages end to end. `KG_extraction_skills/` packages the Article 5 KG-extraction pipeline as three stage skills: `stage1-extract` (spaCy NER + dep parse + Gemini LLM pass + entity and triple merge), `stage2-map-ontology` (OpenAI embedding typer + Gemini LLM fallback + IRI registry + predicate and object mapper), and `stage3-verify-admit` (five-check logic-only compliance gate, rdf:type emission). Each stage also runs standalone. |
 
 More projects will be added as the series continues.
@@ -88,8 +88,21 @@ python -m scima.ontology_extraction --emit   # machine copy under build/
 python -m scima.kg_extraction
 python -m scima.kg_extraction --corpus corpus/incident_report_I204.txt
 
+# Article 10: derive the walk's predicate set from the schema, run the
+# relation-guided beam search, read cache lifetimes off measured half-lives,
+# rank candidates by expected time once the age of their evidence is priced
+# in, show what a frozen lifetime costs when the world speeds up, and price
+# every search design
+python -m scima.agent_search --predicates
+python -m scima.agent_search --dispatch I-204
+python -m scima.agent_search --cache
+python -m scima.agent_search --rank     # rank by expected time, not raw ETA
+python -m scima.agent_search --surge    # re-price when the flip rate triples
+python -m scima.agent_search --costs
+
 # Run the tests that pin each article's ontology to its Growth Tracker
-pytest
+# and each article's published figures to an assertion
+pytest        # 160 passed
 ```
 
 The Article 4 extraction pipeline is also packaged as a standalone seven-stage
@@ -137,18 +150,20 @@ standalone and hands off JSON files to the next.
 │   └── output/             # Generated reviews (git-ignored)
 ├── ontology_kg_for_agents/ # SCIMA, built across the ontology & KG series
 │   ├── scima/              # The SCIMA package (grows across the series)
-│   │   ├── ontology.py             # Load + inspect versioned SCIMA-OWL files (v0.1 through v0.8)
+│   │   ├── ontology.py             # Load + inspect versioned SCIMA-OWL files (v0.1 through v1.0)
 │   │   ├── building_blocks.py      # Article 1: classes, individuals, properties, axioms
 │   │   ├── knowledge_graph.py      # Article 2: populate triples, named graphs, SPARQL, geo query
 │   │   ├── context_graph.py        # Article 3: k-hop projection, relevance scoring, turns, eviction
 │   │   ├── ontology_extraction.py  # Article 4: seven-stage Scope/Surface/Sort/Name/Salience/Structure/Review + RITE
-│   │   └── kg_extraction.py        # Article 5: three-stage Extract/Map/Verify pipeline, OntologyIndex builder, five-check compliance gate
-│   ├── ontologies/         # Canonical SCIMA-OWL, one Turtle file per version (v0.1 through v0.8)
+│   │   ├── kg_extraction.py        # Article 5: three-stage Extract/Map/Verify pipeline, OntologyIndex builder, five-check compliance gate
+│   │   └── agent_search.py         # Article 10: schema-derived predicate sets, guided beam walk with an admissible bound, belief-weighted candidate ranking, non-stationary per-predicate cache TTLs, cost model
+│   ├── ontologies/         # Canonical SCIMA-OWL, one Turtle file per version (v0.1 through v1.0)
 │   │   ├── scima_owl_v0_1.ttl      # Article 1: core class hierarchy
 │   │   ├── scima_owl_v0_2.ttl      # Article 2: sensing vocabulary
 │   │   ├── scima_owl_v0_5.ttl      # Article 3: agent, goal, context-graph vocabulary
 │   │   ├── scima_owl_v0_6.ttl      # Article 4: emergency-response vocabulary (26 classes, 34 props, 15 axioms)
-│   │   └── scima_owl_v0_8.ttl      # Article 5: KG extraction schema (30 classes, 41 props, 18 axioms)
+│   │   ├── scima_owl_v0_8.ttl      # Article 5: KG extraction schema (30 classes, 41 props, 18 axioms)
+│   │   └── scima_owl_v1_0.ttl      # Articles 8 + 10: temporal versioning + dispatch vocabulary (43 classes, 53 props, 21 axioms)
 │   ├── corpus/
 │   │   ├── emergency_procedures.txt    # Article 4 source corpus
 │   │   └── incident_report_I204.txt    # Article 5 source: 6-sentence incident narrative
@@ -157,7 +172,8 @@ standalone and hands off JSON files to the next.
 │   │   ├── test_article_02.py
 │   │   ├── test_article_03.py
 │   │   ├── test_article_04.py
-│   │   └── test_article_05.py      # v0.8 schema + three-stage pipeline + 45 behavioural checks
+│   │   ├── test_article_05.py      # v0.8 schema + three-stage pipeline + 45 behavioural checks
+│   │   └── test_article_10.py      # v1.0 schema + derived predicate set + walk + caches + cost table
 │   ├── requirements.txt
 │   └── README.md           # Article-to-code map and design notes
 ├── ontology_KG_extraction_skills/      # Two parallel skill sets for Articles 4 and 5

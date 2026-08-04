@@ -21,6 +21,9 @@ Module map (grows with the series):
     kg_extraction   the three-stage Extract/Map/Verify-Admit pipeline that
                     populates an A-Box from source text against a fixed
                     ontology contract (Article 5)
+    agent_search    schema-derived predicate sets, relation-guided beam walks
+                    with an admissible bound, per-predicate cache TTLs, and
+                    the token/dollar/latency cost model (Article 10)
 """
 
 __all__ = [
@@ -30,6 +33,7 @@ __all__ = [
     "context_graph",
     "ontology_extraction",
     "kg_extraction",
+    "agent_search",
 ]
 
 ONTOLOGY_VERSIONS = {
@@ -38,4 +42,5 @@ ONTOLOGY_VERSIONS = {
     "v0.5": "scima_owl_v0_5.ttl",  # Article 3: agent, goal, context-graph vocabulary
     "v0.6": "scima_owl_v0_6.ttl",  # Article 4: emergency-response vocabulary extracted from sources
     "v0.8": "scima_owl_v0_8.ttl",  # Article 5: KG extraction vocabulary with functional constraints
+    "v1.0": "scima_owl_v1_0.ttl",  # Articles 8 + 10: temporal versioning, dispatch and search vocabulary
 }

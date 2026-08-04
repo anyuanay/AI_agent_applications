@@ -32,6 +32,7 @@ _VERSION_FILES = {
     "v0.5": "scima_owl_v0_5.ttl",
     "v0.6": "scima_owl_v0_6.ttl",
     "v0.8": "scima_owl_v0_8.ttl",  # Article 5: KG extraction vocabulary
+    "v1.0": "scima_owl_v1_0.ttl",  # Articles 8 + 10: temporal versioning, dispatch search
 }
 
 
