@@ -33,6 +33,9 @@ _VERSION_FILES = {
     "v0.6": "scima_owl_v0_6.ttl",
     "v0.8": "scima_owl_v0_8.ttl",  # Article 5: KG extraction vocabulary
     "v1.0": "scima_owl_v1_0.ttl",  # Articles 8 + 10: temporal versioning, dispatch search
+    "v1.1": "scima_owl_v1_1.ttl",  # Article 11: goals, action schemas, methods, change rates
+    "v1.5": "scima_owl_v1_5.ttl",  # Article 12: charging, drone corridors, the evolution record
+    "v1.8": "scima_owl_v1_8.ttl",  # Article 13: belief graphs, intentions, approach legs
 }
 
 
@@ -97,12 +100,26 @@ class ScimaOntology:
 
     def axiom_count(self) -> int:
         """Count the 'beyond the basics' axioms that give the ontology its
-        reasoning power: disjointness statements plus property
-        characteristics (symmetric, functional, transitive, ...).
+        reasoning power: disjointness statements, property
+        characteristics (symmetric, functional, transitive, ...), and
+        class-expression axioms (restrictions and defined classes).
 
         Plain subClassOf / domain / range triples are not counted here; in
         the Growth Tracker they are folded into the class and property
         counts.
+
+        Class-expression axioms arrive with SCIMA-OWL v1.1 (Article 11),
+        where an ``owl:allValuesFrom`` restriction is what eliminates a
+        fire truck from a patient transport and a defined class is what
+        classifies a goal as urgent from its deadline. Every version up to
+        v1.0 has none, so extending the count leaves their totals
+        untouched.
+
+        A restriction nested inside a defined class is deliberately not
+        counted on its own, since it is part of that one axiom rather than
+        a second one. Only restrictions reached directly by
+        ``rdfs:subClassOf`` are counted, plus one per
+        ``owl:equivalentClass``.
         """
         disjoint = len(list(self.graph.triples((None, OWL.disjointWith, None))))
         characteristic_types = [
@@ -118,7 +135,15 @@ class ScimaOntology:
             len(list(self.graph.triples((None, RDF.type, t))))
             for t in characteristic_types
         )
-        return disjoint + characteristics
+        restrictions = sum(
+            1
+            for _s, o in self.graph.subject_objects(RDFS.subClassOf)
+            if (o, RDF.type, OWL.Restriction) in self.graph
+        )
+        defined_classes = len(
+            list(self.graph.triples((None, OWL.equivalentClass, None)))
+        )
+        return disjoint + characteristics + restrictions + defined_classes
 
     def summary(self) -> OntologySummary:
         return OntologySummary(

@@ -1,0 +1,823 @@
+# =====================================================================
+# SCIMA-OWL v1.1  (Article 11: goal achievement and planning)
+# SmartCity Infrastructure Management Agent.
+#
+# v1.1 is the first version a planner can read. v1.0 could describe the
+# city's history and answer a dispatch question; it had no way to say
+# what an agent was trying to DO. This version adds the goal taxonomy,
+# lifted action schemas with OWL-typed parameters, decomposition
+# methods that attach to a goal class, and the measured change-rate
+# profiles that let a precondition be priced as a decaying belief.
+#
+# The design commitment is that everything here is read at run time.
+# A new goal type, a new vehicle kind, or a new decomposition method is
+# a data change rather than a code change, which is the property that
+# keeps a planner correct when the schema moves underneath it.
+#
+# Growth Tracker (cumulative):
+#   62 classes, 85 properties (45 object + 40 datatype), 32 axioms.
+# Delta over v1.0: 19 new classes, 32 new properties, 11 new axioms.
+#
+# The axiom count includes class-expression axioms for the first time
+# (2 restrictions reached by rdfs:subClassOf, 1 defined class), since
+# v1.1 is the first version to use them. Versions v0.1 through v1.0
+# contain none, so their totals are unchanged.
+# =====================================================================
+
+@prefix scima: <http://scima.city/ontology#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix prov:  <http://www.w3.org/ns/prov#> .
+@prefix geo:   <http://www.opengis.net/ont/geosparql#> .
+@prefix time:  <http://www.w3.org/2006/time#> .
+
+# --- Ontology header ---
+<http://scima.city/ontology> a owl:Ontology ;
+    owl:versionInfo "1.1" ;
+    owl:priorVersion <http://scima.city/ontology/v1.0> ;
+    rdfs:label "SCIMA-OWL" ;
+    rdfs:comment "Schema with temporal versioning, the dispatch vocabulary for relation-guided agent search, and the goal, action, and decomposition vocabulary a planner reads at run time." .
+
+# =====================================================================
+# CLASSES (30 inherited from v0.8)
+# =====================================================================
+
+# --- Top level concept (v0.1) ---
+scima:InfrastructureEntity a owl:Class ;
+    rdfs:label "Infrastructure Entity" ;
+    rdfs:comment "Any managed piece of physical city infrastructure." .
+
+# --- Infrastructure subclasses (v0.1) ---
+scima:RoadSegment a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Road Segment" .
+
+scima:TrafficLight a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Traffic Light" .
+
+scima:PowerNode a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Power Node" .
+
+scima:WaterMain a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Water Main" .
+
+# --- Sensing (v0.1) ---
+scima:SensorDevice a owl:Class ;
+    rdfs:label "Sensor Device" ;
+    rdfs:comment "A device that observes the state of infrastructure." .
+
+scima:SensorReading a owl:Class ;
+    rdfs:label "Sensor Reading" ;
+    rdfs:comment "A single timestamped observation from a sensor device." .
+
+# --- Disruptive events (v0.1) ---
+scima:Incident a owl:Class ;
+    rdfs:label "Incident" ;
+    rdfs:comment "A disruptive event affecting one or more infrastructure entities." .
+
+# --- Concrete sensor kinds + transit (v0.2) ---
+scima:TrafficCamera a owl:Class ;
+    rdfs:subClassOf scima:SensorDevice ;
+    rdfs:label "Traffic Camera" .
+
+scima:FlowSensor a owl:Class ;
+    rdfs:subClassOf scima:SensorDevice ;
+    rdfs:label "Flow Sensor" .
+
+scima:PowerMeter a owl:Class ;
+    rdfs:subClassOf scima:SensorDevice ;
+    rdfs:label "Power Meter" .
+
+scima:TransitStop a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Transit Stop" .
+
+# --- Agents, goals, working memory, vehicles (v0.5) ---
+scima:Agent a owl:Class ;
+    rdfs:label "Agent" ;
+    rdfs:comment "An autonomous decision maker that perceives, plans, and acts." .
+
+scima:ZoneAgent a owl:Class ;
+    rdfs:subClassOf scima:Agent ;
+    rdfs:label "Zone Agent" ;
+    rdfs:comment "An agent responsible for one district of the city." .
+
+scima:DispatchAgent a owl:Class ;
+    rdfs:subClassOf scima:Agent ;
+    rdfs:label "Dispatch Agent" ;
+    rdfs:comment "An agent that assigns vehicles and crews to incidents." .
+
+scima:GoalState a owl:Class ;
+    rdfs:label "Goal State" ;
+    rdfs:comment "A target world state an agent is committed to bringing about." .
+
+scima:ContextGraph a owl:Class ;
+    rdfs:label "Context Graph" ;
+    rdfs:comment "A task-scoped projection of the KG that an agent reasons over." .
+
+scima:Vehicle a owl:Class ;
+    rdfs:label "Vehicle" ;
+    rdfs:comment "A mobile resource such as an ambulance, crew truck, or bus." .
+
+# --- Emergency-response vocabulary (v0.6: 8 learned classes) ---
+scima:IncidentCommander a owl:Class ;
+    rdfs:subClassOf scima:Agent ;
+    rdfs:label "Incident Commander" ;
+    skos:altLabel "IC" ;
+    prov:wasDerivedFrom <corpus/emergency_procedures.txt#span_incident_commander> .
+
+scima:HazMatSpill a owl:Class ;
+    rdfs:subClassOf scima:Incident ;
+    rdfs:label "Hazardous Material Spill" ;
+    skos:altLabel "hazardous-material spill" ;
+    prov:wasDerivedFrom <corpus/emergency_procedures.txt#span_hazmat_spill> .
+
+scima:ResponderUnit a owl:Class ;
+    rdfs:label "Responder Unit" ;
+    rdfs:comment "Coined in Stage 3 to group the responder units that cluster together." .
+
+scima:HazmatTeam a owl:Class ;
+    rdfs:subClassOf scima:ResponderUnit ;
+    rdfs:label "Hazmat Team" ;
+    prov:wasDerivedFrom <corpus/emergency_procedures.txt#span_hazmat_team> .
+
+scima:FireDepartment a owl:Class ;
+    rdfs:subClassOf scima:ResponderUnit ;
+    rdfs:label "Fire Department" ;
+    prov:wasDerivedFrom <corpus/emergency_procedures.txt#span_fire_department> .
+
+scima:EmergencyMedicalService a owl:Class ;
+    rdfs:subClassOf scima:ResponderUnit ;
+    rdfs:label "Emergency Medical Service" ;
+    prov:wasDerivedFrom <corpus/emergency_procedures.txt#span_ems> .
+
+scima:HazardousMaterialProtocol a owl:Class ;
+    rdfs:label "Hazardous Material Protocol" ;
+    skos:altLabel "hazardous-material protocol" ;
+    prov:wasDerivedFrom <corpus/emergency_procedures.txt#span_hazmat_protocol> .
+
+scima:EvacuationZone a owl:Class ;
+    rdfs:label "Evacuation Zone" ;
+    rdfs:comment "Orphan from Stage 3; admitted as the range of scima:designates." ;
+    prov:wasDerivedFrom <corpus/emergency_procedures.txt#span_evacuation_zone> .
+
+# =====================================================================
+# NEW in v0.8 (4 classes): incident provenance and sensor specialisation
+# =====================================================================
+
+scima:IncidentReport a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Incident Report" ;
+    rdfs:comment "A structured document reporting the state of a response operation." .
+
+scima:PressureObservation a owl:Class ;
+    rdfs:subClassOf scima:SensorReading ;
+    rdfs:label "Pressure Observation" ;
+    rdfs:comment "A sensor reading that measures pressure (e.g., PSI)." .
+
+scima:TemperatureObservation a owl:Class ;
+    rdfs:subClassOf scima:SensorReading ;
+    rdfs:label "Temperature Observation" ;
+    rdfs:comment "A sensor reading that measures temperature." .
+
+scima:ControlZone a owl:Class ;
+    rdfs:subClassOf geo:Feature ;
+    rdfs:label "Control Zone" ;
+    rdfs:comment "A geographic area established and controlled during an incident." .
+
+# =====================================================================
+# PROPERTIES (41 = 34 from v0.6 + 7 new)
+# Note: scima:commands range updated from scima:Incident to scima:ResponderUnit.
+# =====================================================================
+
+# --- Object properties from v0.2 (8) ---
+scima:locatedOn a owl:ObjectProperty ;
+    rdfs:domain scima:TrafficLight ; rdfs:range scima:RoadSegment ; rdfs:label "located on" .
+scima:monitors a owl:ObjectProperty ;
+    rdfs:domain scima:SensorDevice ; rdfs:range scima:InfrastructureEntity ; rdfs:label "monitors" .
+scima:hasReading a owl:ObjectProperty ;
+    rdfs:domain scima:SensorDevice ; rdfs:range scima:SensorReading ; rdfs:label "has reading" .
+scima:affects a owl:ObjectProperty ;
+    rdfs:domain scima:Incident ; rdfs:range scima:InfrastructureEntity ; rdfs:label "affects" .
+scima:connectedTo a owl:ObjectProperty ;
+    rdfs:domain scima:RoadSegment ; rdfs:range scima:RoadSegment ; rdfs:label "connected to" .
+scima:poweredBy a owl:ObjectProperty ;
+    rdfs:domain scima:InfrastructureEntity ; rdfs:range scima:PowerNode ; rdfs:label "powered by" .
+scima:recordedBy a owl:ObjectProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range scima:SensorDevice ; rdfs:label "recorded by" .
+scima:servesStop a owl:ObjectProperty ;
+    rdfs:domain scima:RoadSegment ; rdfs:range scima:TransitStop ; rdfs:label "serves stop" .
+
+# --- Object properties from v0.5 (7) ---
+scima:pursuesGoal a owl:ObjectProperty ;
+    rdfs:domain scima:Agent ; rdfs:range scima:GoalState ; rdfs:label "pursues goal" .
+scima:targets a owl:ObjectProperty ;
+    rdfs:domain scima:GoalState ; rdfs:range scima:InfrastructureEntity ; rdfs:label "targets" .
+scima:respondsTo a owl:ObjectProperty ;
+    rdfs:domain scima:Agent ; rdfs:range scima:Incident ; rdfs:label "responds to" .
+scima:managedBy a owl:ObjectProperty ;
+    rdfs:domain scima:InfrastructureEntity ; rdfs:range scima:ZoneAgent ; rdfs:label "managed by" .
+scima:hasFocalEntity a owl:ObjectProperty ;
+    rdfs:domain scima:ContextGraph ; rdfs:label "has focal entity" .
+scima:includesEntity a owl:ObjectProperty ;
+    rdfs:domain scima:ContextGraph ; rdfs:label "includes entity" .
+scima:assignedTo a owl:ObjectProperty ;
+    rdfs:domain scima:Vehicle ; rdfs:range scima:Incident ; rdfs:label "assigned to" .
+
+# --- Object properties from v0.6 (4), with commands range updated in v0.8 ---
+scima:commands a owl:ObjectProperty ;
+    rdfs:domain scima:IncidentCommander ; rdfs:range scima:ResponderUnit ;
+    rdfs:label "commands" ;
+    rdfs:comment "An incident commander directs a responder unit. Range updated to ResponderUnit in v0.8." .
+
+scima:dispatchedTo a owl:ObjectProperty ;
+    rdfs:domain scima:ResponderUnit ; rdfs:range scima:Incident ;
+    rdfs:label "dispatched to" ;
+    rdfs:comment "A responder unit is sent to an incident." .
+
+scima:designates a owl:ObjectProperty ;
+    rdfs:domain scima:IncidentCommander ; rdfs:range scima:EvacuationZone ;
+    rdfs:label "designates" ;
+    rdfs:comment "An incident commander establishes an evacuation zone." .
+
+scima:followsProtocol a owl:ObjectProperty ;
+    rdfs:domain scima:ResponderUnit ; rdfs:range scima:HazardousMaterialProtocol ;
+    rdfs:label "follows protocol" ;
+    rdfs:comment "A responder unit must follow a protocol before acting." .
+
+# --- NEW object properties in v0.8 (4) ---
+scima:reportedBy a owl:ObjectProperty ;
+    rdfs:domain scima:IncidentReport ; rdfs:range scima:Agent ;
+    rdfs:label "reported by" ;
+    rdfs:comment "The agent who authored or submitted the incident report." .
+
+scima:relatesToIncident a owl:ObjectProperty ;
+    rdfs:domain scima:IncidentReport ; rdfs:range scima:Incident ;
+    rdfs:label "relates to incident" ;
+    rdfs:comment "The incident this report describes." .
+
+scima:controlledBy a owl:ObjectProperty ;
+    rdfs:domain scima:ControlZone ; rdfs:range scima:IncidentCommander ;
+    rdfs:label "controlled by" ;
+    rdfs:comment "The incident commander responsible for this control zone." .
+
+scima:extractedFrom a owl:ObjectProperty ;
+    rdfs:domain owl:Thing ; rdfs:range scima:IncidentReport ;
+    rdfs:label "extracted from" ;
+    rdfs:comment "Provenance link from an A-Box individual to the report it was extracted from." .
+
+# --- Datatype properties from v0.2 (12) ---
+scima:hasSpeedLimit a owl:DatatypeProperty ;
+    rdfs:domain scima:RoadSegment ; rdfs:range xsd:integer ; rdfs:label "has speed limit" .
+scima:hasIdentifier a owl:DatatypeProperty ;
+    rdfs:domain scima:InfrastructureEntity ; rdfs:range xsd:string ; rdfs:label "has identifier" .
+scima:timestamp a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:dateTime ; rdfs:label "timestamp" .
+scima:confidenceScore a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:decimal ; rdfs:label "confidence score" .
+scima:hasStatus a owl:DatatypeProperty ;
+    rdfs:domain scima:Incident ; rdfs:range xsd:string ; rdfs:label "has status" .
+scima:hasVoltage a owl:DatatypeProperty ;
+    rdfs:domain scima:PowerNode ; rdfs:range xsd:decimal ; rdfs:label "has voltage" .
+scima:observedValue a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:integer ; rdfs:label "observed value" .
+scima:hasTimestamp a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:dateTime ; rdfs:label "has timestamp" .
+scima:hasConfidenceScore a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:decimal ; rdfs:label "has confidence score" .
+scima:hasFlowRate a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:decimal ; rdfs:label "has flow rate" .
+scima:hasLatitude a owl:DatatypeProperty ;
+    rdfs:range xsd:decimal ; rdfs:label "has latitude" .
+scima:hasLongitude a owl:DatatypeProperty ;
+    rdfs:range xsd:decimal ; rdfs:label "has longitude" .
+
+# --- Datatype properties from v0.5 (3) ---
+scima:relevanceScore a owl:DatatypeProperty ;
+    rdfs:range xsd:decimal ; rdfs:label "relevance score" .
+scima:hopDistance a owl:DatatypeProperty ;
+    rdfs:range xsd:integer ; rdfs:label "hop distance" .
+scima:hasAvailability a owl:DatatypeProperty ;
+    rdfs:domain scima:Vehicle ; rdfs:range xsd:string ; rdfs:label "has availability" .
+
+# --- NEW datatype properties in v0.8 (3) ---
+scima:reportedAt a owl:DatatypeProperty ;
+    rdfs:domain scima:IncidentReport ; rdfs:range xsd:dateTime ;
+    rdfs:label "reported at" ;
+    rdfs:comment "Timestamp when the incident report was submitted." .
+
+scima:hasUnit a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:string ;
+    rdfs:label "has unit" ;
+    rdfs:comment "The unit of measure for an observed value (e.g., psi, Celsius)." .
+
+scima:measuredAt a owl:DatatypeProperty ;
+    rdfs:domain scima:SensorReading ; rdfs:range xsd:dateTime ;
+    rdfs:label "measured at" ;
+    rdfs:comment "Timestamp of the sensor observation." .
+
+# =====================================================================
+# AXIOMS (18 = 15 from v0.6 + 3 new FunctionalProperty axioms)
+# Counted by scima/ontology.py: owl:disjointWith + property characteristics.
+# =====================================================================
+
+# --- Disjointness from v0.1/v0.2 (5) ---
+scima:RoadSegment owl:disjointWith scima:TrafficLight .
+scima:RoadSegment owl:disjointWith scima:PowerNode .
+scima:PowerNode   owl:disjointWith scima:WaterMain .
+scima:SensorDevice  owl:disjointWith scima:InfrastructureEntity .
+scima:SensorReading owl:disjointWith scima:SensorDevice .
+
+# --- Property characteristics from v0.1/v0.2 (3) ---
+scima:connectedTo a owl:SymmetricProperty .
+scima:hasIdentifier a owl:FunctionalProperty .
+scima:recordedBy a owl:FunctionalProperty .
+
+# --- Disjointness / characteristic from v0.5 (4) ---
+scima:Agent owl:disjointWith scima:InfrastructureEntity .
+scima:Agent owl:disjointWith scima:SensorDevice .
+scima:ZoneAgent owl:disjointWith scima:DispatchAgent .
+scima:hasFocalEntity a owl:FunctionalProperty .
+
+# --- From v0.6 (3): responder units are mutually disjoint ---
+scima:HazmatTeam     owl:disjointWith scima:FireDepartment .
+scima:HazmatTeam     owl:disjointWith scima:EmergencyMedicalService .
+scima:FireDepartment owl:disjointWith scima:EmergencyMedicalService .
+
+# --- NEW in v0.8 (3): functional constraints needed for KG verification ---
+scima:commands      a owl:FunctionalProperty .   # at most one team per commander
+scima:observedValue a owl:FunctionalProperty .   # at most one value per reading
+scima:reportedAt    a owl:FunctionalProperty .   # one timestamp per report
+
+
+# =====================================================================
+# DELTA: Article 8, temporal versioning (3 classes)
+# =====================================================================
+
+scima:KnowledgeFrame a owl:Class ;
+    rdfs:label "Knowledge Frame" ;
+    rdfs:comment "One timestamped snapshot of belief about an entity, stored as a named graph. Frames are append-only; a correction adds a frame rather than overwriting one." .
+
+scima:BeliefState a owl:Class ;
+    rdfs:label "Belief State" ;
+    rdfs:comment "A probability distribution over the mutually disjoint states an entity may be in at the time of a frame." .
+
+scima:RevisionEvent a owl:Class ;
+    rdfs:label "Revision Event" ;
+    rdfs:comment "The act of replacing one frame with a successor, recording whether the world changed (update) or only our information did (revision)." .
+
+# =====================================================================
+# DELTA: Article 10, dispatch and search vocabulary (10 classes)
+# =====================================================================
+
+scima:ZonedEntity a owl:Class ;
+    rdfs:label "Zoned Entity" ;
+    rdfs:comment "Anything that sits inside a control zone. Introduced so scima:withinZone has one declared domain covering both incidents and infrastructure." .
+
+scima:Incident rdfs:subClassOf scima:ZonedEntity .
+scima:InfrastructureEntity rdfs:subClassOf scima:ZonedEntity .
+
+scima:Station a owl:Class ;
+    rdfs:label "Station" ;
+    rdfs:comment "A base from which emergency vehicles are dispatched." .
+
+scima:EmergencyVehicle a owl:Class ;
+    rdfs:subClassOf scima:Vehicle ;
+    rdfs:label "Emergency Vehicle" ;
+    rdfs:comment "Any vehicle that may be dispatched to an incident. Querying this class rather than its subclasses is what keeps a dispatch agent correct when a new vehicle type is declared." .
+
+scima:Ambulance a owl:Class ;
+    rdfs:subClassOf scima:EmergencyVehicle ;
+    rdfs:label "Ambulance" ;
+    rdfs:comment "An emergency vehicle equipped to transport a patient." .
+
+scima:AirAmbulance a owl:Class ;
+    rdfs:subClassOf scima:Ambulance ;
+    rdfs:label "Air Ambulance" ;
+    rdfs:comment "Rotary-wing patient transport. Declared after the county air service came online, and matched automatically by any query written against scima:Ambulance." .
+
+scima:FireTruck a owl:Class ;
+    rdfs:subClassOf scima:EmergencyVehicle ;
+    rdfs:label "Fire Truck" .
+
+scima:LadderTruck a owl:Class ;
+    rdfs:subClassOf scima:FireTruck ;
+    rdfs:label "Ladder Truck" .
+
+scima:PoliceVehicle a owl:Class ;
+    rdfs:subClassOf scima:EmergencyVehicle ;
+    rdfs:label "Police Vehicle" .
+
+scima:HazmatUnit a owl:Class ;
+    rdfs:subClassOf scima:EmergencyVehicle ;
+    rdfs:label "Hazmat Unit" .
+
+scima:RescueBoat a owl:Class ;
+    rdfs:subClassOf scima:EmergencyVehicle ;
+    rdfs:label "Rescue Boat" .
+
+# =====================================================================
+# DELTA: properties (12 new: 7 object + 5 datatype)
+# =====================================================================
+
+# --- Article 8: temporal versioning ---
+scima:validDuring a owl:ObjectProperty ;
+    rdfs:domain scima:KnowledgeFrame ;
+    rdfs:range  time:Interval ;
+    rdfs:label "valid during" .
+
+scima:wasRevisedFrom a owl:ObjectProperty ;
+    rdfs:domain scima:KnowledgeFrame ;
+    rdfs:range  scima:KnowledgeFrame ;
+    rdfs:label "was revised from" .
+
+scima:describesEntity a owl:ObjectProperty ;
+    rdfs:domain scima:KnowledgeFrame ;
+    rdfs:range  owl:Thing ;
+    rdfs:label "describes entity" .
+
+# --- Article 10: the edges a dispatch walk follows ---
+scima:withinZone a owl:ObjectProperty ;
+    rdfs:domain scima:ZonedEntity ;
+    rdfs:range  scima:ControlZone ;
+    rdfs:label "within zone" ;
+    rdfs:comment "Hop 1 of the dispatch walk: from the incident to the zone that contains it." .
+
+scima:servedByStation a owl:ObjectProperty ;
+    rdfs:domain scima:ControlZone ;
+    rdfs:range  scima:Station ;
+    rdfs:label "served by station" ;
+    rdfs:comment "Hop 2 of the dispatch walk: from a zone to the stations that cover it." .
+
+scima:stationedAt a owl:ObjectProperty ;
+    rdfs:domain scima:Vehicle ;
+    rdfs:range  scima:Station ;
+    rdfs:label "stationed at" ;
+    rdfs:comment "Hop 3 of the dispatch walk, followed backwards: from a station to the vehicles based there." .
+
+scima:adjacentTo a owl:ObjectProperty ;
+    rdfs:domain scima:ControlZone ;
+    rdfs:range  scima:ControlZone ;
+    rdfs:label "adjacent to" ;
+    rdfs:comment "Lets a walk spill into a neighbouring zone when the home zone has nothing available." .
+
+# --- Article 8 + 10 datatype properties ---
+scima:changeKind a owl:DatatypeProperty ;
+    rdfs:domain scima:RevisionEvent ;
+    rdfs:range  xsd:string ;
+    rdfs:label "change kind" ;
+    rdfs:comment "Either 'update' (the world changed) or 'revision' (only our information changed)." .
+
+scima:beliefProbability a owl:DatatypeProperty ;
+    rdfs:domain scima:BeliefState ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label "belief probability" .
+
+scima:hasLocation a owl:DatatypeProperty ;
+    rdfs:domain scima:Vehicle ;
+    rdfs:range  geo:wktLiteral ;
+    rdfs:label "has location" ;
+    rdfs:comment "Last reported position. Caches for 97 seconds at a 0.80 confidence floor, given a 5-minute half-life." .
+
+scima:statusObservedAt a owl:DatatypeProperty ;
+    rdfs:domain scima:Vehicle ;
+    rdfs:range  xsd:dateTime ;
+    rdfs:label "status observed at" ;
+    rdfs:comment "When scima:hasStatus was last confirmed. The freshness filter in a dispatch query reads this, not the time the query ran." .
+
+scima:etaMinutes a owl:DatatypeProperty ;
+    rdfs:domain scima:Vehicle ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label "eta minutes" ;
+    rdfs:comment "Road ETA to the current scene, supplied by the routing service. Always at or above the straight-line lower bound, which is what makes that bound admissible." .
+
+# =====================================================================
+# DELTA: axioms (3 new)
+# =====================================================================
+
+# Adjacency between zones runs both ways.
+scima:adjacentTo a owl:SymmetricProperty .
+
+# A vehicle has exactly one home station.
+scima:stationedAt a owl:FunctionalProperty .
+
+# A frame cannot be revised from itself, in either direction.
+scima:wasRevisedFrom a owl:AsymmetricProperty .
+
+
+# =====================================================================
+# DELTA: Article 11, goal achievement and planning (SCIMA-OWL v1.1)
+#
+# Planning is the first thing SCIMA does that the schema had no
+# vocabulary for at all, so this is a large delta. Three groups land
+# here: the goal taxonomy, the planning machinery itself, and the
+# entities the incident I-204 plan actually touches.
+#
+# The design commitment is that a planner reads all of this at run time.
+# Goal tests, action schemas, decomposition methods, and even the decay
+# rates that price a precondition are ontology content, so adding a goal
+# type or a vehicle kind is a data change rather than a code change.
+# =====================================================================
+
+# --- Goal taxonomy (8 classes) ---------------------------------------
+# scima:GoalState already exists from v0.5 and is the parent of all of
+# these. Methods attach to a class, so a method written at
+# ServiceRestorationGoal covers both of its children for free.
+
+scima:IncidentResolutionGoal a owl:Class ;
+    rdfs:subClassOf scima:GoalState ;
+    rdfs:label "Incident Resolution Goal" ;
+    rdfs:comment "Contain an incident: the root goal a dispatch agent decomposes." .
+
+scima:PatientTransportGoal a owl:Class ;
+    rdfs:subClassOf scima:GoalState ;
+    rdfs:label "Patient Transport Goal" ;
+    rdfs:comment "Get a patient through a hospital door within a deadline." .
+
+scima:ServiceRestorationGoal a owl:Class ;
+    rdfs:subClassOf scima:GoalState ;
+    rdfs:label "Service Restoration Goal" ;
+    rdfs:comment "Restore a utility service. Deliberately generic, because the decomposition method attaches here and is inherited by every child." .
+
+scima:WaterServiceRestorationGoal a owl:Class ;
+    rdfs:subClassOf scima:ServiceRestorationGoal ;
+    rdfs:label "Water Service Restoration Goal" .
+
+scima:PowerServiceRestorationGoal a owl:Class ;
+    rdfs:subClassOf scima:ServiceRestorationGoal ;
+    rdfs:label "Power Service Restoration Goal" .
+
+scima:TrafficClearanceGoal a owl:Class ;
+    rdfs:subClassOf scima:GoalState ;
+    rdfs:label "Traffic Clearance Goal" .
+
+scima:PublicNotificationGoal a owl:Class ;
+    rdfs:subClassOf scima:GoalState ;
+    rdfs:label "Public Notification Goal" ;
+    rdfs:comment "A leaf goal: one action schema achieves it directly." .
+
+scima:UrgentTransportGoal a owl:Class ;
+    rdfs:label "Urgent Transport Goal" ;
+    rdfs:comment "A DEFINED class. Membership is computed from the deadline rather than asserted, so classifying a goal here is what routes the cardinality restriction below onto it." .
+
+# --- Planning machinery (5 classes) ----------------------------------
+
+scima:ActionSchema a owl:Class ;
+    rdfs:label "Action Schema" ;
+    rdfs:comment "A lifted action: typed parameters, a precondition pattern, and add/delete effects. Parameters are typed by OWL class, so subsumption decides who may bind." .
+
+scima:Plan a owl:Class ;
+    rdfs:label "Plan" ;
+    rdfs:comment "A partially ordered set of plan steps committed against a goal." .
+
+scima:PlanStep a owl:Class ;
+    rdfs:label "Plan Step" ;
+    rdfs:comment "One ground action in a plan, carrying the frame its precondition was checked against and the confidence that check returned." .
+
+scima:DecompositionMethod a owl:Class ;
+    rdfs:label "Decomposition Method" ;
+    rdfs:comment "To achieve a goal of this class, achieve these subgoals in this partial order. Attaches to a goal CLASS via punning, so it covers every subclass." .
+
+scima:ChangeRateProfile a owl:Class ;
+    rdfs:label "Change Rate Profile" ;
+    rdfs:comment "The measured half-life of one predicate on one class. A rate belongs to the pair, not to the predicate alone, since a pump truck's availability does not flip on an ambulance's clock." .
+
+# --- Entities the I-204 plan touches (6 classes) ---------------------
+
+scima:MaintenanceCrew a owl:Class ;
+    rdfs:subClassOf scima:ResponderUnit ;
+    rdfs:label "Maintenance Crew" .
+
+scima:PumpTruck a owl:Class ;
+    rdfs:subClassOf scima:Vehicle ;
+    rdfs:label "Pump Truck" ;
+    rdfs:comment "Not an EmergencyVehicle: it is dispatched by the water utility, and the distinction keeps it out of the dispatch walk's candidate set." .
+
+scima:Valve a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Valve" .
+
+scima:Hospital a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Hospital" .
+
+scima:LandingZone a owl:Class ;
+    rdfs:subClassOf scima:InfrastructureEntity ;
+    rdfs:label "Landing Zone" ;
+    rdfs:comment "A marked site an air ambulance may use. Its clearance is a decaying belief, which is why DispatchAirAmbulance carries an extra precondition." .
+
+scima:Patient a owl:Class ;
+    rdfs:label "Patient" ;
+    rdfs:comment "A person under care during an incident." .
+
+# =====================================================================
+# DELTA: object properties (15 new)
+# =====================================================================
+
+scima:hasSubGoal a owl:ObjectProperty ;
+    rdfs:domain scima:GoalState ; rdfs:range scima:GoalState ;
+    rdfs:label "has sub goal" .
+
+scima:targetsEntity a owl:ObjectProperty ;
+    rdfs:domain scima:GoalState ; rdfs:range owl:Thing ;
+    rdfs:label "targets entity" ;
+    rdfs:comment "Wider than the v0.5 scima:targets, whose range is InfrastructureEntity, because a transport goal targets a patient." .
+
+scima:achievedBy a owl:ObjectProperty ;
+    rdfs:domain scima:GoalState ; rdfs:range scima:ActionSchema ;
+    rdfs:label "achieved by" ;
+    rdfs:comment "Present on leaf goals only. A goal with neither a method nor this link is STUCK, and a planner must report that rather than return an empty step list." .
+
+scima:assignedResource a owl:ObjectProperty ;
+    rdfs:domain scima:GoalState ; rdfs:range scima:Vehicle ;
+    rdfs:label "assigned resource" .
+
+scima:methodFor a owl:ObjectProperty ;
+    rdfs:domain scima:DecompositionMethod ; rdfs:range owl:Thing ;
+    rdfs:label "method for" ;
+    rdfs:comment "Names a goal CLASS, which needs OWL 2 punning. Attaching at a class is what lets four methods cover six goal classes." .
+
+scima:hasStep a owl:ObjectProperty ;
+    rdfs:domain scima:Plan ; rdfs:range scima:PlanStep ;
+    rdfs:label "has step" .
+
+scima:stepAction a owl:ObjectProperty ;
+    rdfs:domain scima:PlanStep ; rdfs:range scima:ActionSchema ;
+    rdfs:label "step action" .
+
+scima:stepBinds a owl:ObjectProperty ;
+    rdfs:domain scima:PlanStep ; rdfs:range owl:Thing ;
+    rdfs:label "step binds" ;
+    rdfs:comment "The individuals substituted for the action schema's parameters." .
+
+scima:mustFollow a owl:ObjectProperty ;
+    rdfs:domain scima:PlanStep ; rdfs:range scima:PlanStep ;
+    rdfs:label "must follow" ;
+    rdfs:comment "The partial order. Transitive, so a scheduler gets the full precedence closure without anybody listing it." .
+
+scima:specializes a owl:ObjectProperty ;
+    rdfs:domain scima:ActionSchema ; rdfs:range scima:ActionSchema ;
+    rdfs:label "specializes" ;
+    rdfs:comment "Action-level subsumption: DispatchAirAmbulance narrows DispatchVehicle's parameter type and adds a precondition. Selection is most-specific-first." .
+
+scima:rateForClass a owl:ObjectProperty ;
+    rdfs:domain scima:ChangeRateProfile ; rdfs:range owl:Thing ;
+    rdfs:label "rate for class" ;
+    rdfs:comment "Names a class (punning). Lookup walks up the hierarchy, so AirAmbulance with no profile of its own inherits Ambulance's 90 seconds." .
+
+scima:checkedAgainstFrame a owl:ObjectProperty ;
+    rdfs:domain scima:PlanStep ; rdfs:range scima:KnowledgeFrame ;
+    rdfs:label "checked against frame" ;
+    rdfs:comment "Which snapshot this step's precondition was verified in. Revising a frame re-verifies exactly the steps that read it." .
+
+scima:hasLandingZone a owl:ObjectProperty ;
+    rdfs:domain scima:ControlZone ; rdfs:range scima:LandingZone ;
+    rdfs:label "has landing zone" .
+
+scima:hasPatient a owl:ObjectProperty ;
+    rdfs:domain scima:Incident ; rdfs:range scima:Patient ;
+    rdfs:label "has patient" .
+
+scima:handedOverAt a owl:ObjectProperty ;
+    rdfs:domain scima:Patient ; rdfs:range scima:Hospital ;
+    rdfs:label "handed over at" ;
+    rdfs:comment "Asserted by the transport action's effect. The transport goal's achievedWhen pattern reads this, so the goal is achieved by query rather than by a flag." .
+
+# =====================================================================
+# DELTA: datatype properties (17 new)
+# =====================================================================
+
+scima:hasDeadlineMinutes a owl:DatatypeProperty ;
+    rdfs:domain scima:GoalState ; rdfs:range xsd:decimal ;
+    rdfs:label "has deadline minutes" .
+
+scima:achievedWhen a owl:DatatypeProperty ;
+    rdfs:domain scima:GoalState ; rdfs:range xsd:string ;
+    rdfs:label "achieved when" ;
+    rdfs:comment "A graph pattern. The goal holds exactly when this matches, so nobody sets a completion flag." .
+
+scima:preconditionPattern a owl:DatatypeProperty ;
+    rdfs:domain scima:ActionSchema ; rdfs:range xsd:string ;
+    rdfs:label "precondition pattern" .
+
+scima:effectAdd a owl:DatatypeProperty ;
+    rdfs:domain scima:ActionSchema ; rdfs:range xsd:string ;
+    rdfs:label "effect add" .
+
+scima:effectDelete a owl:DatatypeProperty ;
+    rdfs:domain scima:ActionSchema ; rdfs:range xsd:string ;
+    rdfs:label "effect delete" .
+
+scima:expectedDurationMinutes a owl:DatatypeProperty ;
+    rdfs:domain scima:ActionSchema ; rdfs:range xsd:decimal ;
+    rdfs:label "expected duration minutes" .
+
+scima:ratePredicate a owl:DatatypeProperty ;
+    rdfs:domain scima:ChangeRateProfile ; rdfs:range xsd:string ;
+    rdfs:label "rate predicate" .
+
+scima:halfLifeSeconds a owl:DatatypeProperty ;
+    rdfs:domain scima:ChangeRateProfile ; rdfs:range xsd:decimal ;
+    rdfs:label "half life seconds" ;
+    rdfs:comment "Measured, not chosen, and an estimate of a quantity that itself moves. Every consumer takes a rate multiplier so that holding it fixed is never a hidden assumption." .
+
+scima:stepOrder a owl:DatatypeProperty ;
+    rdfs:domain scima:PlanStep ; rdfs:range xsd:integer ;
+    rdfs:label "step order" .
+
+scima:stepConfidence a owl:DatatypeProperty ;
+    rdfs:domain scima:PlanStep ; rdfs:range xsd:decimal ;
+    rdfs:label "step confidence" ;
+    rdfs:comment "The precondition's belief AT THE TIME THIS STEP WILL RUN, not at plan time." .
+
+scima:checkedAt a owl:DatatypeProperty ;
+    rdfs:domain scima:PlanStep ; rdfs:range xsd:dateTime ;
+    rdfs:label "checked at" .
+
+scima:hasCongestionLevel a owl:DatatypeProperty ;
+    rdfs:domain scima:RoadSegment ; rdfs:range xsd:integer ;
+    rdfs:label "has congestion level" .
+
+scima:hasValveState a owl:DatatypeProperty ;
+    rdfs:domain scima:Valve ; rdfs:range xsd:string ;
+    rdfs:label "has valve state" .
+
+scima:hasDivertStatus a owl:DatatypeProperty ;
+    rdfs:domain scima:Hospital ; rdfs:range xsd:string ;
+    rdfs:label "has divert status" .
+
+scima:hasLandingClearance a owl:DatatypeProperty ;
+    rdfs:domain scima:LandingZone ; rdfs:range xsd:string ;
+    rdfs:label "has landing clearance" .
+
+scima:extractionConfidence a owl:DatatypeProperty ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "extraction confidence" ;
+    rdfs:comment "Carried by quarantined candidate triples. A precondition that matches only in quarantine returns UNKNOWN with this belief rather than FALSE." .
+
+scima:observedAt a owl:DatatypeProperty ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "observed at" .
+
+# =====================================================================
+# DELTA: axioms (11 new: 3 disjointness, 5 characteristics, 3 class-expression)
+# =====================================================================
+
+# --- Vehicle kinds are mutually exclusive (3) ---
+# Needed so that the universal restriction below produces a genuine
+# contradiction rather than merely an odd inference.
+scima:Ambulance owl:disjointWith scima:FireTruck .
+scima:Ambulance owl:disjointWith scima:PoliceVehicle .
+scima:FireTruck owl:disjointWith scima:PoliceVehicle .
+
+# --- Property characteristics (5) ---
+scima:hasValveState      a owl:FunctionalProperty .   # one state at a time; this is what makes IsolateValve and OpenHydrant mutex
+scima:hasDeadlineMinutes a owl:FunctionalProperty .   # one deadline per goal
+scima:mustFollow         a owl:TransitiveProperty .   # precedence closure for free
+scima:mustFollow         a owl:AsymmetricProperty .   # a step cannot both precede and follow another
+scima:hasSubGoal         a owl:IrreflexiveProperty .  # no goal is its own subgoal
+# NB: irreflexivity does NOT rule out a length-3 decomposition cycle.
+# That check is graph reachability and lives outside OWL 2 DL.
+
+# --- Resource type constraint (1) ---
+# Whatever is assigned to a patient transport must be an ambulance.
+# Assigning FIRE-12 lets the reasoner derive FireTruck AND Ambulance,
+# which the disjointness above turns into an inconsistency.
+scima:PatientTransportGoal rdfs:subClassOf [
+    a owl:Restriction ;
+    owl:onProperty    scima:assignedResource ;
+    owl:allValuesFrom scima:Ambulance
+] .
+
+# --- The defined class (1) ---
+# Membership is COMPUTED from the deadline. A goal carrying
+# hasDeadlineMinutes 16.0 is classified here without anybody saying so.
+scima:UrgentTransportGoal owl:equivalentClass [
+    a owl:Class ;
+    owl:intersectionOf (
+        scima:PatientTransportGoal
+        [ a owl:Restriction ;
+          owl:onProperty scima:hasDeadlineMinutes ;
+          owl:someValuesFrom [
+              a owl:DataRange ;
+              owl:onDatatype xsd:decimal ;
+              owl:withRestrictions ( [ xsd:maxInclusive 16.0 ] )
+          ] ]
+    )
+] .
+
+# --- Qualified cardinality on the defined class (1) ---
+# Classification routes this onto the goal. Nobody attached it.
+# It is also what makes dispatching AMB-17 and AIR-3 a mutex pair.
+scima:UrgentTransportGoal rdfs:subClassOf [
+    a owl:Restriction ;
+    owl:onProperty              scima:assignedResource ;
+    owl:onClass                 scima:Ambulance ;
+    owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger
+] .
