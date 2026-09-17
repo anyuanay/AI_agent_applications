@@ -3,7 +3,7 @@
 Code that backs the article series **"Ontology and Knowledge Graphs for
 Intelligent Agents"** (see `../ontology_KG_agents/ontology_KG_agent_series_plan.md`).
 
-SCIMA is the running city-service example for the series. This package contains versioned ontologies and teaching modules for extraction, search, planning, evolution, and belief utilities. The shipped ontology files extend through v1.8. Later schema versions remain planning targets.
+SCIMA is the running city-service example for the series. This package contains versioned ontologies and teaching modules for extraction, search, planning, evolution, and belief utilities. The shipped ontology files extend through v1.8. Later schema versions remain planning targets. The series has nineteen articles. Article 15 adds an offline co-evolution companion without a schema release.
 ## Layout
 
 ```
@@ -22,6 +22,7 @@ ontology_kg_for_agents/
 │   ├── agent_planning.py      # Article 11: goals as ontology content, OWL-typed grounding, method decomposition, preconditions as beliefs at future times, plan shelf life, axiom-derived mutex
 │   ├── ontology_evolution.py  # Article 12: derived promotion and retirement thresholds, axiom weights as seasonal processes, safe vs backward-reaching additions, the compatibility gate
 │   ├── source_actor_memory.py # Article 13: saved memory, Bayes, probes, casts, and evidence identity
+│   ├── ontology_nn_coevolution.py # Article 15: transition-rate learning and reviewed graph/model records
 │   ├── agent_beliefs.py       # belief utilities and supplemental examples
 │   └── belief_decisions.py    # Supplemental bridge assessments and pending-plan checks
 ├── ontologies/                # canonical SCIMA-OWL, one file per version
@@ -47,6 +48,7 @@ ontology_kg_for_agents/
     ├── test_article_11.py     # asserts v1.1 + the grounding cascade, the candidate funnel, the plan ranking reversal, shelf life, mutex, quarantine
     ├── test_article_12.py     # asserts v1.5 + the derived thresholds, the pooled-weight error, the stale type list, the compatibility gate
     ├── test_source_actor_memory.py # Article 13 exchange, persistence, validation, and local evidence
+    ├── test_article_15.py     # Article 15: probability updates, evidence review, manifests, and CLI records
     ├── test_article_13.py     # v1.8 schema and supplemental belief utility checks
     └── test_belief_decisions.py # River Bridge arithmetic, evidence copies, and plan dependencies
 ```
@@ -75,11 +77,12 @@ is which.
 | 12           | Continual learning, ontology and knowledge graph evolution            | `scima/ontology_evolution.py`, `ontologies/scima_owl_v1_5.ttl`                                                                                                                                                                                                                                                                                                                                                |
 | 13           | LLM Agent Beliefs, Stochastic Memory, and Source-Actor Architecture   | `scima/source_actor_memory.py`, `tests/test_source_actor_memory.py`. Six-stage teaching example with JSON snapshots. The integrated LLM runtime remains planned.                                                                                                                                                                                                                                              |
 | Supplemental | Earlier bridge and intersection examples                              | `scima/belief_decisions.py`, `scima/agent_beliefs.py`, `ontologies/scima_owl_v1_8.ttl`                                                                                                                                                                                                                                                                                                                        |
-| 14, planned  | Stochastic memory prediction and correction                           | Exact small-case update and particle filtering. No module shipped.                                                                                                                                                                                                                                                                                                                                            |
-| 15, planned  | Source-actor memory coordination                                      | Versioned initialization, evidence exchange, duplicate-safe reconciliation. Article 13 supplies a small exchange example. General coordination remains planned.                                                                                                                                                                                                                                               |
-| 16, planned  | GraphRAG over stochastic memory                                       | Context construction, output checks, and validated memory writes. No module shipped.                                                                                                                                                                                                                                                                                                                          |
-| 17, planned  | Cross-domain memory alignment                                         | Versioned mappings with uncertainty and evidence identity. No module shipped.                                                                                                                                                                                                                                                                                                                                 |
-| 18, planned  | Integrated LLM agent case                                             | Matched baselines and trace-based evaluation. No integrated runtime shipped.                                                                                                                                                                                                                                                                                                                                  |
+| 14 | Stochastic memory prediction and correction | Written article with a browser demonstration. No Python companion module shipped. |
+| 15 | Ontology-neural network co-evolution | `scima/ontology_nn_coevolution.py`, `tests/test_article_15.py`. Offline Beta updates, training manifests, candidate records, proposal review, and JSON traces. No neural training. |
+| 16, planned  | Source-actor memory coordination                                      | Versioned initialization, evidence exchange, duplicate-safe reconciliation. Article 13 supplies a small exchange example. General coordination remains planned.                                                                                                                                                                                                                                               |
+| 17, planned  | GraphRAG over stochastic memory                                       | Context construction, output checks, and validated memory writes. No module shipped.                                                                                                                                                                                                                                                                                                                          |
+| 18, planned  | Cross-domain memory alignment                                         | Versioned mappings with uncertainty and evidence identity. No module shipped.                                                                                                                                                                                                                                                                                                                                 |
+| 19, planned  | Integrated LLM agent case                                             | Matched baselines and trace-based evaluation. No integrated runtime shipped.                                                                                                                                                                                                                                                                                                                                  |
 
 ## Setup
 
@@ -506,8 +509,32 @@ Run the tests:
 
 ```bash
 pytest
-# 302 passed on 2026-09-12
+# 319 passed on 2026-09-17
 ```
+
+## Article 15 co-evolution companion
+
+[Read the article](../ontology_KG_agents/article_15_ontology_nn_coevolution.html) and [the nineteen-article plan](../ontology_KG_agents/ontology_KG_agent_series_plan.md).
+
+Run the example from this package directory. No API key or model download is required.
+
+```bash
+python -m scima.ontology_nn_coevolution
+python -m scima.ontology_nn_coevolution --output build/article_15_coevolution
+python -m pytest -q tests/test_article_15.py
+```
+
+The command learns the teaching storm rate from ten distinct episodes. Beta(2, 8) becomes Beta(9, 11), with mean 0.45. Each episode starts open and ends open or closed one minute later. Independent episodes and accurate labels are stated assumptions.
+
+The bridge trace follows seven stages. It saves inherited memory, an accepted report, checked-example fixtures, a candidate adapter record, a proposal, a reviewed change, and the next training manifest. `trace.json` contains the full trace. Numbered JSON files contain individual stages.
+
+The companion reuses the fixed-state memory update from `source_actor_memory.py`. It does not apply the prediction step from the particle-filter article. Report R17 changes the open probability from 0.8 to about 0.308 under that fixed-state assumption. The storm-rate example uses separate observations and does not change this bridge assessment.
+
+Training manifests name their evidence and graph versions. New evidence makes an earlier manifest stale. Candidate records keep `weights_trained` false and `status` set to `tests_pending`. The base model remains W0. No training, model call, promotion, or performance evaluation occurs.
+
+Review takes a caller-supplied finding with scope, original observation IDs, and a reviewer. Copied training evidence cannot support acceptance. A supporting finding adds a versioned ontology-change record and informs the next manifest. A rejected finding leaves the accepted ontology unchanged. These records do not change the shipped Turtle schemas.
+
+The caller must establish evidence quality and independence. Source identifiers provide bookkeeping, not authentication. Retraction, model repair, general ontology reasoning, and network transport remain planned.
 
 ## Design notes
 
@@ -516,7 +543,7 @@ pytest
 - **The manager supplies shared structure.** Role-specific initial memories preserve the source version, claim scope, and evidence links.
 - **Shared evidence creates dependence.** Copying an inherited belief or forwarding a report adds no independent observation. Reconciliation must track original evidence.
 - **Manager authority does not establish certainty.** Shared assessments need uncertainty and source records. Exact source knowledge is a stated teaching assumption.
-- **Documentation distinguishes the target system from teaching utilities.** The integrated source-actor runtime and remaining article modules are planned.
+- **Documentation distinguishes the target system from teaching utilities.** The integrated source-actor runtime and modules for Articles 16–19 are planned. Article 15 supplies offline records without neural training.
 
 - **The Turtle file is the source of truth for tooling.** `building_blocks.py`
   is the source of truth for the *prose*: a readable Python mirror of the same

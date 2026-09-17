@@ -12,27 +12,32 @@ SCIMA’s article architecture treats every agent as an LLM agent with a foundat
 
 ## Series Index
 
-[Read Article 13. LLM Agent Beliefs, Stochastic Memory, and Source-Actor Architecture](./ontology_KG_agents/article_13_agent_belief_kgs.html).
+[Read Article 15. Ontology-Neural Network Co-evolution](./ontology_KG_agents/article_15_ontology_nn_coevolution.html). The [series plan](./ontology_KG_agents/ontology_KG_agent_series_plan.md) contains nineteen articles.
 
 | Directory                                                            | Spans                                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | -------------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`lit_review_agent/`](./lit_review_agent/)                           | Parts 1–18                           | An agent that searches Semantic Scholar, reads abstracts, and drafts a literature review. Grows across the series to include a vector store and property-graph memory, a plan/sub-agent orchestrator, skills and hooks, prompt-injection defenses, span-based tracing, model routing and cost rollups, an offline evaluation suite, progressive disclosure, a confidence gate, and a stacked outer-loop system (event-driven trigger, verification loop, and hill-climbing).                                                                                                                                                                                                                                                                                                             |
-| [`ontology_kg_for_agents/`](./ontology_kg_for_agents/)               | Articles 1–13 and supplemental demos | SCIMA schemas through v1.8, graph extraction, context retrieval, search, planning, and ontology evolution.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| [`ontology_kg_for_agents/`](./ontology_kg_for_agents/)               | Articles 1–13, 15, and supplemental demos | SCIMA schemas through v1.8, graph extraction, context retrieval, search, planning, ontology evolution, and offline co-evolution records.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | [`ontology_KG_extraction_skills/`](./ontology_KG_extraction_skills/) |                                      | Two parallel sets of composable agent skills, one per article. `ontology_extraction_skills/` packages the Article 4 ontology-extraction pipeline as seven self-contained stage skills (`stage0-scope` through `stage4-review-ontology`), with a top-level `ontology-extraction` entry skill and `scripts/run_pipeline.py` that chain all stages end to end. `KG_extraction_skills/` packages the Article 5 KG-extraction pipeline as three stage skills: `stage1-extract` (spaCy NER + dep parse + Gemini LLM pass + entity and triple merge), `stage2-map-ontology` (OpenAI embedding typer + Gemini LLM fallback + IRI registry + predicate and object mapper), and `stage3-verify-admit` (five-check logic-only compliance gate, rdf:type emission). Each stage also runs standalone. |
 
 More projects will be added as the series continues.
 
 ---
 
-## Remaining ontology articles
+## Ontology series status
 
-| Article | Planned focus |
-| --- | --- |
-| 14 | Update an actor’s stochastic memory through prediction and evidence correction. |
-| 15 | Coordinate source and actor memories without counting shared evidence twice. |
-| 16 | Retrieve uncertain beliefs for the LLM and validate persistent memory writes. |
-| 17 | Translate memory across ontologies with versioned, uncertain mappings. |
-| 18 | Evaluate the complete initialization, learning, coordination, and action cycle. |
+Articles 1–15 are written. The new co-evolution article follows the stochastic-update article. Former Articles 15–18 are numbered 16–19.
+
+| Article | Focus | Delivery |
+| --- | --- | --- |
+| [14](./ontology_KG_agents/article_14_stochastic_kg_updates.html) | Stochastic memory prediction and correction. | HTML and browser demonstration. No Python module. |
+| [15](./ontology_KG_agents/article_15_ontology_nn_coevolution.html) | Reviewed ontology changes and model-adaptation records. | HTML, browser trace, offline Python companion, and tests. No neural training. |
+| 16 | Source-actor coordination with shared evidence tracking. | Planned. |
+| 17 | GraphRAG retrieval and validated memory writes. | Planned. |
+| 18 | Alignment across versioned ontologies. | Planned. |
+| 19 | Integrated SCIMA case and matched evaluation. | Planned. |
+
+The co-evolution companion stores training manifests and candidate adapters as records. Evidence review can accept a proposed change and prepare the next manifest. It performs no LLM calls, weight updates, or measured model evaluation. Schema releases remain unchanged.
 
 ## Getting Started
 
@@ -137,12 +142,15 @@ python -m scima.ontology_evolution --diff        # v1.1 -> v1.5, with the change
 # Article 13: six-stage memory exchange with saved snapshots
 python -m scima.source_actor_memory --output build/article_13_memory
 
+# Article 15: offline co-evolution records, no model training
+python -m scima.ontology_nn_coevolution --output build/article_15_coevolution
+
 # Supplemental bridge demo from the earlier Article 13 treatment
 python -m scima.belief_decisions
 
 # Run the tests that pin each article's ontology to its Growth Tracker
 # and each article's published figures to an assertion
-pytest        # 302 passed on 2026-09-12
+pytest        # 319 passed on 2026-09-17
 ```
 
 The Article 4 extraction pipeline is also packaged as a standalone seven-stage
@@ -190,7 +198,7 @@ standalone and hands off JSON files to the next.
 │   └── output/             # Generated reviews (git-ignored)
 ├── ontology_kg_for_agents/ # SCIMA, built across the ontology & KG series
 │   ├── scima/              # The SCIMA package (grows across the series)
-│   │   ├── ontology.py             # Load + inspect versioned SCIMA-OWL files (v0.1 through v1.1)
+│   │   ├── ontology.py             # Load + inspect versioned SCIMA-OWL files (v0.1 through v1.8)
 │   │   ├── building_blocks.py      # Article 1: classes, individuals, properties, axioms
 │   │   ├── knowledge_graph.py      # Article 2: populate triples, named graphs, SPARQL, geo query
 │   │   ├── context_graph.py        # Article 3: k-hop projection, relevance scoring, turns, eviction
@@ -200,6 +208,7 @@ standalone and hands off JSON files to the next.
 │   │   ├── agent_planning.py       # Article 11: goals as ontology content, OWL-typed action grounding, method-based decomposition, preconditions as beliefs at future times, plan shelf life, axiom-derived mutex, three-valued quarantine reads
 │   │   ├── ontology_evolution.py   # Article 12: derived promotion and retirement thresholds, axiom weights as seasonal processes, safe vs backward-reaching additions, the stale type list, the compatibility gate
 │   │   ├── source_actor_memory.py # Article 13: memory snapshots, Bayes, probes, and evidence exchange
+│   │   ├── ontology_nn_coevolution.py # Article 15: Beta updates, training manifests, and proposal review
 │   │   ├── agent_beliefs.py        # belief utilities and supplemental examples
 │   │   └── belief_decisions.py   # Supplemental bridge decision demo
 │   ├── ontologies/         # Canonical SCIMA-OWL, one Turtle file per version (v0.1 through v1.8)
@@ -225,6 +234,7 @@ standalone and hands off JSON files to the next.
 │   │   ├── test_article_11.py      # v1.1 schema + grounding cascade + candidate funnel + plan ranking reversal + shelf life + mutex + quarantine
 │   │   ├── test_article_12.py      # v1.5 schema + derived thresholds + pooled-weight error + stale type list + compatibility gate
 │   │   ├── test_source_actor_memory.py # Article 13 memory exchange and persistence
+│   │   ├── test_article_15.py      # Co-evolution evidence and version checks
 │   │   ├── test_article_13.py      # v1.8 schema + aged-belief pair + two-operator fork + closed-form flip age + asymmetric divergence + resolution ladder
 │   │   └── test_belief_decisions.py # River Bridge checks
 │   ├── requirements.txt
